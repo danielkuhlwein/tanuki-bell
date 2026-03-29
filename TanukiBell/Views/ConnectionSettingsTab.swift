@@ -94,6 +94,7 @@ struct ConnectionSettingsTab: View {
                     }
                 }
             }
+            .padding(.top, 10)
         }
         .padding()
         .onAppear {
