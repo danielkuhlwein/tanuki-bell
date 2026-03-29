@@ -1,22 +1,48 @@
 import AppKit
 import UserNotifications
 
-final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate, @unchecked Sendable {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         UNUserNotificationCenter.current().delegate = self
-        requestNotificationPermission()
         registerNotificationCategories()
+        requestNotificationPermission()
     }
 
     // MARK: - Notification setup
 
     private func requestNotificationPermission() {
-        UNUserNotificationCenter.current().requestAuthorization(
-            options: [.alert, .sound, .badge]
-        ) { granted, error in
-            if let error {
-                print("Notification permission error: \(error)")
+        Task { @MainActor in
+            let center = UNUserNotificationCenter.current()
+            let settings = await center.notificationSettings()
+
+            switch settings.authorizationStatus {
+            case .notDetermined:
+                let granted = try? await center.requestAuthorization(options: [.alert, .sound, .badge])
+                if granted != true {
+                    showNotificationPermissionAlert()
+                }
+            case .denied:
+                showNotificationPermissionAlert()
+            case .authorized, .provisional, .ephemeral:
+                break
+            @unknown default:
+                break
+            }
+        }
+    }
+
+    private func showNotificationPermissionAlert() {
+        let alert = NSAlert()
+        alert.messageText = "Notifications Are Disabled"
+        alert.informativeText = "Tanuki Bell needs notification permission to alert you about GitLab activity. Please enable notifications in System Settings."
+        alert.alertStyle = .informational
+        alert.addButton(withTitle: "Open System Settings")
+        alert.addButton(withTitle: "Later")
+
+        if alert.runModal() == .alertFirstButtonReturn {
+            if let url = URL(string: "x-apple.systempreferences:com.apple.Notifications-Settings") {
+                NSWorkspace.shared.open(url)
             }
         }
     }
@@ -44,7 +70,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
             .setNotificationCategories([mrCategory])
     }
 
-    // MARK: - UNUserNotificationCenterDelegate
+}
+
+// MARK: - UNUserNotificationCenterDelegate
+
+extension AppDelegate: UNUserNotificationCenterDelegate {
 
     func userNotificationCenter(
         _ center: UNUserNotificationCenter,
