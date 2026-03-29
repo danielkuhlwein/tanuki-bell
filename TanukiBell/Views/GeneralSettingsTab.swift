@@ -41,7 +41,8 @@ struct GeneralSettingsTab: View {
                     }
             }
         }
-        .padding()
+        .padding(.vertical)
+        .padding(.horizontal, 40)
         .onAppear {
             launchAtLogin = SMAppService.mainApp.status == .enabled
         }
