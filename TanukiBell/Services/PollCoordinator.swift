@@ -5,10 +5,7 @@ import SwiftData
 final class PollCoordinator {
     private var primaryTimer: DispatchSourceTimer?
     private var supplementalTimer: DispatchSourceTimer?
-    private let queue = DispatchQueue(
-        label: "com.danielkuhlwein.tanuki-bell.poll",
-        qos: .utility
-    )
+    private let queue = DispatchQueue.main
     private var currentInterval: TimeInterval = 30
     private var userInterval: TimeInterval = 30
 
@@ -38,7 +35,7 @@ final class PollCoordinator {
         let t = DispatchSource.makeTimerSource(queue: queue)
         t.schedule(deadline: .now(), repeating: interval, leeway: .seconds(5))
         t.setEventHandler { [weak self] in
-            Task { @MainActor in self?.pollTodos() }
+            self?.pollTodos()
         }
         t.resume()
         primaryTimer = t
@@ -47,7 +44,7 @@ final class PollCoordinator {
         let s = DispatchSource.makeTimerSource(queue: queue)
         s.schedule(deadline: .now() + 10, repeating: 120, leeway: .seconds(10))
         s.setEventHandler { [weak self] in
-            Task { @MainActor in self?.pollSupplemental() }
+            self?.pollSupplemental()
         }
         s.resume()
         supplementalTimer = s
@@ -69,7 +66,7 @@ final class PollCoordinator {
         let t = DispatchSource.makeTimerSource(queue: queue)
         t.schedule(deadline: .now(), repeating: interval, leeway: .seconds(5))
         t.setEventHandler { [weak self] in
-            Task { @MainActor in self?.pollTodos() }
+            self?.pollTodos()
         }
         t.resume()
         primaryTimer = t
@@ -80,7 +77,7 @@ final class PollCoordinator {
         let s = DispatchSource.makeTimerSource(queue: queue)
         s.schedule(deadline: .now(), repeating: suppInterval, leeway: .seconds(10))
         s.setEventHandler { [weak self] in
-            Task { @MainActor in self?.pollSupplemental() }
+            self?.pollSupplemental()
         }
         s.resume()
         supplementalTimer = s
