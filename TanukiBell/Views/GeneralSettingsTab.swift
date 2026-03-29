@@ -10,20 +10,31 @@ struct GeneralSettingsTab: View {
     @State private var launchAtLogin = false
 
     var body: some View {
-        Form {
-            Section("Polling") {
-                HStack {
-                    Text("Poll interval: \(Int(pollingInterval))s")
-                    Slider(value: $pollingInterval, in: 15...300, step: 15)
-                }
-                .onChange(of: pollingInterval) { _, _ in
-                    if appState.isConnected {
-                        appState.restartPolling(modelContainer: modelContext.container)
+        VStack(alignment: .leading, spacing: 20) {
+            // Polling
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Polling")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+
+                Slider(value: $pollingInterval, in: 15...300, step: 15)
+                    .onChange(of: pollingInterval) { _, _ in
+                        if appState.isConnected {
+                            appState.restartPolling(modelContainer: modelContext.container)
+                        }
                     }
-                }
+
+                Text("Poll interval: \(Int(pollingInterval))s")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
             }
 
-            Section("Startup") {
+            // Startup
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Startup")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+
                 Toggle("Launch at login", isOn: $launchAtLogin)
                     .onChange(of: launchAtLogin) { _, newValue in
                         setLaunchAtLogin(newValue)
