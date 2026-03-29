@@ -16,18 +16,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, @unchecked Sendable {
     // MARK: - Notification setup
 
     private func requestNotificationPermission() {
-        Task { @MainActor in
-            let center = UNUserNotificationCenter.current()
-            let settings = await center.notificationSettings()
-
+        let center = UNUserNotificationCenter.current()
+        center.getNotificationSettings { [weak self] settings in
             switch settings.authorizationStatus {
             case .notDetermined:
-                let granted = try? await center.requestAuthorization(options: [.alert, .sound, .badge])
-                if granted != true {
-                    showNotificationPermissionAlert()
+                center.requestAuthorization(options: [.alert, .sound, .badge]) { granted, _ in
+                    if !granted {
+                        DispatchQueue.main.async { self?.showNotificationPermissionAlert() }
+                    }
                 }
             case .denied:
-                showNotificationPermissionAlert()
+                DispatchQueue.main.async { self?.showNotificationPermissionAlert() }
             case .authorized, .provisional, .ephemeral:
                 break
             @unknown default:
@@ -36,6 +35,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, @unchecked Sendable {
         }
     }
 
+    @MainActor
     private func showNotificationPermissionAlert() {
         let alert = NSAlert()
         alert.messageText = "Notifications Are Disabled"

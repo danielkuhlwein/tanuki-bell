@@ -1,6 +1,7 @@
 import Sparkle
 
 /// Wraps SPUStandardUpdaterController for use from SwiftUI.
+@MainActor
 final class UpdaterController: ObservableObject {
     private let controller: SPUStandardUpdaterController
 

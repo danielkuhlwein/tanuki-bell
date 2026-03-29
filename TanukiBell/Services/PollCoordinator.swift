@@ -2,12 +2,8 @@ import Foundation
 import SwiftData
 
 actor PollCoordinator {
-    private var primaryTimer: DispatchSourceTimer?
-    private var supplementalTimer: DispatchSourceTimer?
-    private let queue = DispatchQueue(
-        label: "com.danielkuhlwein.tanuki-bell.poll",
-        qos: .utility
-    )
+    private var primaryTask: Task<Void, Never>?
+    private var supplementalTask: Task<Void, Never>?
     private var currentInterval: TimeInterval = 30
     private var userInterval: TimeInterval = 30
 
@@ -15,7 +11,7 @@ actor PollCoordinator {
     private let modelContainer: ModelContainer
     private let onUpdate: @Sendable (Int, Date) -> Void
 
-    var isRunning: Bool { primaryTimer != nil }
+    var isRunning: Bool { primaryTask != nil }
 
     init(
         gitLabService: GitLabService,
@@ -28,61 +24,39 @@ actor PollCoordinator {
     }
 
     func start(interval: TimeInterval = 30) {
-        primaryTimer?.cancel()
-        supplementalTimer?.cancel()
+        primaryTask?.cancel()
+        supplementalTask?.cancel()
         userInterval = interval
         currentInterval = interval
 
-        // Primary poll (todos) — user-configured interval
-        let t = DispatchSource.makeTimerSource(queue: queue)
-        t.schedule(deadline: .now(), repeating: interval, leeway: .seconds(5))
-        t.setEventHandler { [weak self] in
-            Task { await self?.pollTodos() }
+        primaryTask = Task { [weak self] in
+            while !Task.isCancelled {
+                await self?.pollTodos()
+                try? await Task.sleep(for: .seconds(interval))
+            }
         }
-        t.resume()
-        primaryTimer = t
 
-        // Supplemental poll (MR state + notes) — 2 minutes
-        let s = DispatchSource.makeTimerSource(queue: queue)
-        s.schedule(deadline: .now() + 10, repeating: 120, leeway: .seconds(10))
-        s.setEventHandler { [weak self] in
-            Task { await self?.pollSupplemental() }
+        supplementalTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(10)) // initial delay
+            while !Task.isCancelled {
+                await self?.pollSupplemental()
+                try? await Task.sleep(for: .seconds(120))
+            }
         }
-        s.resume()
-        supplementalTimer = s
     }
 
     func stop() {
-        primaryTimer?.cancel()
-        primaryTimer = nil
-        supplementalTimer?.cancel()
-        supplementalTimer = nil
+        primaryTask?.cancel()
+        primaryTask = nil
+        supplementalTask?.cancel()
+        supplementalTask = nil
     }
 
     func adjustInterval(idle: Bool) {
         let interval: TimeInterval = idle ? 120 : userInterval
         guard interval != currentInterval else { return }
         currentInterval = interval
-
-        primaryTimer?.cancel()
-        let t = DispatchSource.makeTimerSource(queue: queue)
-        t.schedule(deadline: .now(), repeating: interval, leeway: .seconds(5))
-        t.setEventHandler { [weak self] in
-            Task { await self?.pollTodos() }
-        }
-        t.resume()
-        primaryTimer = t
-
-        // Supplemental: 5min when idle, 2min when active
-        let suppInterval: TimeInterval = idle ? 300 : 120
-        supplementalTimer?.cancel()
-        let s = DispatchSource.makeTimerSource(queue: queue)
-        s.schedule(deadline: .now(), repeating: suppInterval, leeway: .seconds(10))
-        s.setEventHandler { [weak self] in
-            Task { await self?.pollSupplemental() }
-        }
-        s.resume()
-        supplementalTimer = s
+        start(interval: interval)
     }
 
     // MARK: - Primary poll (todos)
@@ -258,7 +232,6 @@ actor PollCoordinator {
             let oldState = tracked.state
             let newState = mr.state
 
-            // Update tracked state
             tracked.state = newState
             tracked.lastSeenAt = .now
             try context.save()
@@ -272,7 +245,6 @@ actor PollCoordinator {
             }
             return nil
         } else {
-            // First time seeing this MR — start tracking, no notification
             let tracked = TrackedMergeRequest(
                 mrID: mr.id,
                 iid: mr.iid,
@@ -402,7 +374,7 @@ actor PollCoordinator {
     @MainActor
     private func cleanupOldRecords() async {
         let context = ModelContext(modelContainer)
-        let cutoff = Date.now.addingTimeInterval(-7 * 24 * 60 * 60) // 7 days
+        let cutoff = Date.now.addingTimeInterval(-7 * 24 * 60 * 60)
 
         do {
             let oldTodos = FetchDescriptor<ProcessedTodo>(
