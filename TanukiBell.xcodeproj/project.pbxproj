@@ -13,6 +13,7 @@
 		487F23FFC7EEC3D7BB67B42B /* PollState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15D3CB7E97E1B3EA3503AA08 /* PollState.swift */; };
 		55D7EE4FADFA29AF5545239E /* NotificationClassifierTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0309D3A6E00E7CD712AF9B4F /* NotificationClassifierTests.swift */; };
 		5653F1F940A3C5A2D94D2CC6 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EE749B7EA8C04BABA7DDE87 /* AppState.swift */; };
+		5DF208903E77137A8F652BB3 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 13B40003FCE26C8063327B21 /* Sparkle */; };
 		5EC6D24B016D4227C980E499 /* PollCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 658925DF08B53382B452CFA1 /* PollCoordinator.swift */; };
 		605581C8FC06B11AED528C28 /* GeneralSettingsTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = C786639565ABEC34BCFE712D /* GeneralSettingsTab.swift */; };
 		62A6B66CF8E4EBE16E7F3558 /* GitLabAPITypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2808B91DF140DA8501C7A43E /* GitLabAPITypes.swift */; };
@@ -32,6 +33,7 @@
 		CE1E166673247353A361815C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 95EECE73FAE1467B8EB8E813 /* Assets.xcassets */; };
 		E8A275A06EED610394DA92B7 /* NotificationHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 357A706A8CFB0EFC2D8D34DE /* NotificationHistoryView.swift */; };
 		FB079DA231119AC7ACF0AD3F /* NotificationPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = 455B793610CFB7B12AED646B /* NotificationPreferences.swift */; };
+		FE489D6C736A964661A97582 /* UpdaterController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D6333F38179A3AC3EAF42F5 /* UpdaterController.swift */; };
 		FED0F46D7E9D084C308696DA /* NotificationClassifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3488B07FC0C8C2D240C0A631 /* NotificationClassifier.swift */; };
 /* End PBXBuildFile section */
 
@@ -60,6 +62,7 @@
 		658925DF08B53382B452CFA1 /* PollCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PollCoordinator.swift; sourceTree = "<group>"; };
 		691C815F1729AFCF759FAAB1 /* NotificationSettingsTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationSettingsTab.swift; sourceTree = "<group>"; };
 		7253C6ACF2891B5F56460161 /* TanukiBell.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = TanukiBell.entitlements; sourceTree = "<group>"; };
+		7D6333F38179A3AC3EAF42F5 /* UpdaterController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdaterController.swift; sourceTree = "<group>"; };
 		7DB2C610319672A7DBC08569 /* TanukiBell.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TanukiBell.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7EE749B7EA8C04BABA7DDE87 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
 		824013EAA1A975389DCFE420 /* ConnectionSettingsTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionSettingsTab.swift; sourceTree = "<group>"; };
@@ -77,6 +80,17 @@
 		ED499AED583F3B86A3A2CBEA /* NotificationRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationRowView.swift; sourceTree = "<group>"; };
 		EF8078CF71D029B0E9B0916C /* TanukiBellTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TanukiBellTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		14D96865CF1A51BCD667AA71 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5DF208903E77137A8F652BB3 /* Sparkle in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
 		1294BEF13E1CE4372E851DC7 /* TanukiBellTests */ = {
@@ -132,6 +146,7 @@
 				CC19F9C5F37D4094EA333EC2 /* NotificationDispatcher.swift */,
 				455B793610CFB7B12AED646B /* NotificationPreferences.swift */,
 				658925DF08B53382B452CFA1 /* PollCoordinator.swift */,
+				7D6333F38179A3AC3EAF42F5 /* UpdaterController.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -206,6 +221,7 @@
 			buildPhases = (
 				9B945FA63DB6B3CC1047841F /* Sources */,
 				E6A608E883E5415A9AF9944A /* Resources */,
+				14D96865CF1A51BCD667AA71 /* Frameworks */,
 			);
 			buildRules = (
 			);
@@ -213,6 +229,7 @@
 			);
 			name = TanukiBell;
 			packageProductDependencies = (
+				13B40003FCE26C8063327B21 /* Sparkle */,
 			);
 			productName = TanukiBell;
 			productReference = 7DB2C610319672A7DBC08569 /* TanukiBell.app */;
@@ -241,6 +258,9 @@
 			);
 			mainGroup = B2160B1DD92A66BD04BFC43A;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				774E1660C0D9CBF89BA4A376 /* XCRemoteSwiftPackageReference "Sparkle" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = B82A35EE4A1A5BF796A98BCF /* Products */;
 			projectDirPath = "";
@@ -300,6 +320,7 @@
 				C3440A31240B4563CD9DF47A /* SettingsView.swift in Sources */,
 				0D68DFE1EDE88B1C0ED0E8CC /* TanukiBellApp.swift in Sources */,
 				CC31B0BE4AAECA905FC23109 /* TrackedMergeRequest.swift in Sources */,
+				FE489D6C736A964661A97582 /* UpdaterController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -546,6 +567,25 @@
 			defaultConfigurationName = Debug;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		774E1660C0D9CBF89BA4A376 /* XCRemoteSwiftPackageReference "Sparkle" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sparkle-project/Sparkle";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.6.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		13B40003FCE26C8063327B21 /* Sparkle */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 774E1660C0D9CBF89BA4A376 /* XCRemoteSwiftPackageReference "Sparkle" */;
+			productName = Sparkle;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 496A5BD089369C85CD4A0B27 /* Project object */;
 }

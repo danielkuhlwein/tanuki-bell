@@ -5,6 +5,7 @@ import SwiftData
 struct TanukiBellApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @State private var appState = AppState()
+    @StateObject private var updaterController = UpdaterController()
 
     let modelContainer: ModelContainer = {
         let schema = Schema([
@@ -29,6 +30,7 @@ struct TanukiBellApp: App {
         MenuBarExtra {
             MenuBarPopover()
                 .environment(appState)
+                .environmentObject(updaterController)
                 .modelContainer(modelContainer)
                 .frame(width: 360, height: 480)
                 .onAppear {
