@@ -1,2 +1,0 @@
-- Notification on startup to tell the user that the app is running/polling
-- Tanuki cat meow notification sounds

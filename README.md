@@ -49,20 +49,20 @@ graph LR
 
 | Type | Trigger |
 |------|---------|
-| <img src="docs/icons/review-requested.png" width="20"> Review Requested | `review_requested` todo |
-| <img src="docs/icons/re-review-requested.png" width="20"> Re-Review Requested | Reviewer list diff between polls |
-| <img src="docs/icons/assigned.png" width="20"> Assigned to You | `assigned` todo |
-| <img src="docs/icons/reassigned.png" width="20"> Reassigned | Assignee list diff between polls |
-| <img src="docs/icons/changes-requested.png" width="20"> Changes Requested | Unresolved review threads |
-| <img src="docs/icons/new-comment.png" width="20"> New Comment | `mentioned` / `directly_addressed` todo |
-| <img src="docs/icons/comment-edited.png" width="20"> Comment Edited | Notes API (`updated_at > created_at`) |
-| <img src="docs/icons/approved.png" width="20"> Approved | `approval_required` / `review_submitted` todo |
-| <img src="docs/icons/merged.png" width="20"> Merged | MR state poll |
-| <img src="docs/icons/closed.png" width="20"> Closed | MR state poll |
-| <img src="docs/icons/mentioned.png" width="20"> Mentioned | `mentioned` todo |
-| <img src="docs/icons/closed.png" width="20"> Pipeline Failed | `build_failed` todo |
-| <img src="docs/icons/new-commits.png" width="20"> New Commits Pushed | Commit diff between polls |
-| <img src="docs/icons/activity.png" width="20"> MR Activity | Catch-all for other actions |
+| <img src="docs/icons/review-requested.png" width="20" style="vertical-align: middle"> Review Requested | `review_requested` todo |
+| <img src="docs/icons/re-review-requested.png" width="20" style="vertical-align: middle"> Re-Review Requested | Reviewer list diff between polls |
+| <img src="docs/icons/assigned.png" width="20" style="vertical-align: middle"> Assigned to You | `assigned` todo |
+| <img src="docs/icons/reassigned.png" width="20" style="vertical-align: middle"> Reassigned | Assignee list diff between polls |
+| <img src="docs/icons/changes-requested.png" width="20" style="vertical-align: middle"> Changes Requested | Unresolved review threads |
+| <img src="docs/icons/new-comment.png" width="20" style="vertical-align: middle"> New Comment | `mentioned` / `directly_addressed` todo |
+| <img src="docs/icons/comment-edited.png" width="20" style="vertical-align: middle"> Comment Edited | Notes API (`updated_at > created_at`) |
+| <img src="docs/icons/approved.png" width="20" style="vertical-align: middle"> Approved | `approval_required` / `review_submitted` todo |
+| <img src="docs/icons/merged.png" width="20" style="vertical-align: middle"> Merged | MR state poll |
+| <img src="docs/icons/closed.png" width="20" style="vertical-align: middle"> Closed | MR state poll |
+| <img src="docs/icons/mentioned.png" width="20" style="vertical-align: middle"> Mentioned | `mentioned` todo |
+| <img src="docs/icons/closed.png" width="20" style="vertical-align: middle"> Pipeline Failed | `build_failed` todo |
+| <img src="docs/icons/new-commits.png" width="20" style="vertical-align: middle"> New Commits Pushed | Commit diff between polls |
+| <img src="docs/icons/activity.png" width="20" style="vertical-align: middle"> MR Activity | Catch-all for other actions |
 
 ## Getting Started
 
