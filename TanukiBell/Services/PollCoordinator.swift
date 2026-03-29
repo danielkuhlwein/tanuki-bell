@@ -8,6 +8,7 @@ actor PollCoordinator {
         qos: .utility
     )
     private var currentInterval: TimeInterval = 30
+    private var userInterval: TimeInterval = 30
 
     private let gitLabService: GitLabService
     private let modelContainer: ModelContainer
@@ -31,6 +32,7 @@ actor PollCoordinator {
 
     func start(interval: TimeInterval = 30) {
         timer?.cancel()
+        userInterval = interval
         currentInterval = interval
 
         let t = DispatchSource.makeTimerSource(queue: queue)
@@ -52,9 +54,18 @@ actor PollCoordinator {
     }
 
     func adjustInterval(idle: Bool) {
-        let interval: TimeInterval = idle ? 120 : 30
+        let interval: TimeInterval = idle ? 120 : userInterval
         guard interval != currentInterval else { return }
-        start(interval: interval)
+        currentInterval = interval
+
+        timer?.cancel()
+        let t = DispatchSource.makeTimerSource(queue: queue)
+        t.schedule(deadline: .now(), repeating: interval, leeway: .seconds(5))
+        t.setEventHandler { [weak self] in
+            Task { await self?.poll() }
+        }
+        t.resume()
+        timer = t
     }
 
     // MARK: - Core poll cycle
