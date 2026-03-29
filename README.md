@@ -12,7 +12,7 @@
 <br>
 
 > [!NOTE]
-> A native macOS menu bar app that monitors GitLab for merge request activity and delivers classified, actionable notifications. Replaces multi-component script-based systems with a single, polished SwiftUI application — no Mail.app dependency, no LaunchAgents, no Terminal commands.
+> A native macOS menu bar app that monitors GitLab for merge request activity and delivers classified, actionable notifications. Replaces the [multi-component script-based system](https://github.com/danielkuhlwein/gitlab-pr-notifier) with a single, polished SwiftUI application — no Mail.app dependency, no LaunchAgents, no Terminal commands.
 
 ## Features
 
