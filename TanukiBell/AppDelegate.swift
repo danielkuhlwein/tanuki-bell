@@ -2,7 +2,8 @@ import AppKit
 import UserNotifications
 import SwiftData
 
-final class AppDelegate: NSObject, NSApplicationDelegate, @unchecked Sendable {
+@MainActor
+final class AppDelegate: NSObject, NSApplicationDelegate {
 
     var modelContainer: ModelContainer?
     var appState: AppState?
@@ -16,26 +17,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, @unchecked Sendable {
     // MARK: - Notification setup
 
     private func requestNotificationPermission() {
-        let center = UNUserNotificationCenter.current()
-        center.getNotificationSettings { [weak self] settings in
-            switch settings.authorizationStatus {
-            case .notDetermined:
-                center.requestAuthorization(options: [.alert, .sound, .badge]) { granted, _ in
-                    if !granted {
-                        DispatchQueue.main.async { self?.showNotificationPermissionAlert() }
-                    }
-                }
-            case .denied:
-                DispatchQueue.main.async { self?.showNotificationPermissionAlert() }
-            case .authorized, .provisional, .ephemeral:
-                break
-            @unknown default:
-                break
+        Task {
+            let center = UNUserNotificationCenter.current()
+            let granted = try? await center.requestAuthorization(options: [.alert, .sound, .badge])
+            if granted != true {
+                showNotificationPermissionAlert()
             }
         }
     }
 
-    @MainActor
     private func showNotificationPermissionAlert() {
         let alert = NSAlert()
         alert.messageText = "Notifications Are Disabled"
@@ -76,7 +66,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, @unchecked Sendable {
 
     // MARK: - Mark notification as read in SwiftData
 
-    @MainActor
     private func markNotificationRead(mrTitle: String) {
         guard let container = modelContainer else { return }
         let context = ModelContext(container)
@@ -90,7 +79,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, @unchecked Sendable {
             }
             try context.save()
 
-            // Update bell badge
             let unreadDescriptor = FetchDescriptor<NotificationRecord>(
                 predicate: #Predicate { !$0.isRead }
             )
@@ -104,7 +92,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, @unchecked Sendable {
 
 // MARK: - UNUserNotificationCenterDelegate
 
-extension AppDelegate: UNUserNotificationCenterDelegate {
+extension AppDelegate: @preconcurrency UNUserNotificationCenterDelegate {
 
     func userNotificationCenter(
         _ center: UNUserNotificationCenter,
@@ -119,11 +107,8 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
                let url = URL(string: urlString) {
                 NSWorkspace.shared.open(url)
             }
-            // Mark as read in SwiftData
             if let mrTitle = userInfo["mrTitle"] as? String {
-                Task { @MainActor in
-                    self.markNotificationRead(mrTitle: mrTitle)
-                }
+                markNotificationRead(mrTitle: mrTitle)
             }
         case "MARK_DONE":
             if let todoID = userInfo["todoID"] as? String,
@@ -134,11 +119,8 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
                     try? await service.markTodoAsDone(id: todoID, token: token)
                 }
             }
-            // Also mark as read
             if let mrTitle = userInfo["mrTitle"] as? String {
-                Task { @MainActor in
-                    self.markNotificationRead(mrTitle: mrTitle)
-                }
+                markNotificationRead(mrTitle: mrTitle)
             }
         default:
             break
