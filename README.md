@@ -47,22 +47,23 @@ graph LR
 
 ## Notification Types
 
-| Type | Trigger |
-|------|---------|
-| <img src="docs/icons/review-requested.png" width="20" style="vertical-align: middle"> Review Requested | `review_requested` todo |
-| <img src="docs/icons/re-review-requested.png" width="20" style="vertical-align: middle"> Re-Review Requested | Reviewer list diff between polls |
-| <img src="docs/icons/assigned.png" width="20" style="vertical-align: middle"> Assigned to You | `assigned` todo |
-| <img src="docs/icons/reassigned.png" width="20" style="vertical-align: middle"> Reassigned | Assignee list diff between polls |
-| <img src="docs/icons/changes-requested.png" width="20" style="vertical-align: middle"> Changes Requested | Unresolved review threads |
-| <img src="docs/icons/new-comment.png" width="20" style="vertical-align: middle"> New Comment | `mentioned` / `directly_addressed` todo |
-| <img src="docs/icons/comment-edited.png" width="20" style="vertical-align: middle"> Comment Edited | Notes API (`updated_at > created_at`) |
-| <img src="docs/icons/approved.png" width="20" style="vertical-align: middle"> Approved | `approval_required` / `review_submitted` todo |
-| <img src="docs/icons/merged.png" width="20" style="vertical-align: middle"> Merged | MR state poll |
-| <img src="docs/icons/closed.png" width="20" style="vertical-align: middle"> Closed | MR state poll |
-| <img src="docs/icons/mentioned.png" width="20" style="vertical-align: middle"> Mentioned | `mentioned` todo |
-| <img src="docs/icons/closed.png" width="20" style="vertical-align: middle"> Pipeline Failed | `build_failed` todo |
-| <img src="docs/icons/new-commits.png" width="20" style="vertical-align: middle"> New Commits Pushed | Commit diff between polls |
-| <img src="docs/icons/activity.png" width="20" style="vertical-align: middle"> MR Activity | Catch-all for other actions |
+<table>
+<tr><th>Type</th><th>Trigger</th></tr>
+<tr><td><img src="docs/icons/review-requested.png" width="20" align="center"> Review Requested</td><td><code>review_requested</code> todo</td></tr>
+<tr><td><img src="docs/icons/re-review-requested.png" width="20" align="center"> Re-Review Requested</td><td>Reviewer list diff between polls</td></tr>
+<tr><td><img src="docs/icons/assigned.png" width="20" align="center"> Assigned to You</td><td><code>assigned</code> todo</td></tr>
+<tr><td><img src="docs/icons/reassigned.png" width="20" align="center"> Reassigned</td><td>Assignee list diff between polls</td></tr>
+<tr><td><img src="docs/icons/changes-requested.png" width="20" align="center"> Changes Requested</td><td>Unresolved review threads</td></tr>
+<tr><td><img src="docs/icons/new-comment.png" width="20" align="center"> New Comment</td><td><code>mentioned</code> / <code>directly_addressed</code> todo</td></tr>
+<tr><td><img src="docs/icons/comment-edited.png" width="20" align="center"> Comment Edited</td><td>Notes API (<code>updated_at > created_at</code>)</td></tr>
+<tr><td><img src="docs/icons/approved.png" width="20" align="center"> Approved</td><td><code>approval_required</code> / <code>review_submitted</code> todo</td></tr>
+<tr><td><img src="docs/icons/merged.png" width="20" align="center"> Merged</td><td>MR state poll</td></tr>
+<tr><td><img src="docs/icons/closed.png" width="20" align="center"> Closed</td><td>MR state poll</td></tr>
+<tr><td><img src="docs/icons/mentioned.png" width="20" align="center"> Mentioned</td><td><code>mentioned</code> todo</td></tr>
+<tr><td><img src="docs/icons/closed.png" width="20" align="center"> Pipeline Failed</td><td><code>build_failed</code> todo</td></tr>
+<tr><td><img src="docs/icons/new-commits.png" width="20" align="center"> New Commits Pushed</td><td>Commit diff between polls</td></tr>
+<tr><td><img src="docs/icons/activity.png" width="20" align="center"> MR Activity</td><td>Catch-all for other actions</td></tr>
+</table>
 
 ## Getting Started
 
