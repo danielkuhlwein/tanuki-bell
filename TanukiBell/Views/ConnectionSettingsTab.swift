@@ -47,6 +47,9 @@ struct ConnectionSettingsTab: View {
                     .foregroundStyle(.tertiary)
             }
 
+            Spacer()
+                .frame(height: 10)
+
             // Actions
             VStack(spacing: 10) {
                 HStack {
@@ -94,7 +97,6 @@ struct ConnectionSettingsTab: View {
                     }
                 }
             }
-            .padding(.top, 10)
         }
         .padding()
         .onAppear {
