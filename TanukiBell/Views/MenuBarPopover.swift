@@ -28,6 +28,11 @@ struct MenuBarPopover: View {
         VStack(spacing: 0) {
             // Header
             HStack {
+                if let appIcon = NSImage(named: "AppIcon") {
+                    Image(nsImage: appIcon)
+                        .resizable()
+                        .frame(width: 18, height: 18)
+                }
                 Text("Tanuki Bell")
                     .font(.headline)
                 Spacer()

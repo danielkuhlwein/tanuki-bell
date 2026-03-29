@@ -203,4 +203,5 @@ struct ClassifiedNotification {
     let threadID: String
     let notificationID: String
     let gitlabTodoID: String
+    let bodyExcerpt: String?
 }

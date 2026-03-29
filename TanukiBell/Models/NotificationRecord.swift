@@ -12,6 +12,7 @@ final class NotificationRecord {
     var sourceURL: String?
     var senderName: String
     var senderAvatarURL: String?
+    var bodyExcerpt: String?
     var receivedAt: Date
     var isRead: Bool
 
@@ -28,7 +29,8 @@ final class NotificationRecord {
         mrTitle: String,
         sourceURL: String? = nil,
         senderName: String,
-        senderAvatarURL: String? = nil
+        senderAvatarURL: String? = nil,
+        bodyExcerpt: String? = nil
     ) {
         self.id = UUID()
         self.notificationType = notificationType
@@ -39,6 +41,7 @@ final class NotificationRecord {
         self.sourceURL = sourceURL
         self.senderName = senderName
         self.senderAvatarURL = senderAvatarURL
+        self.bodyExcerpt = bodyExcerpt
         self.receivedAt = .now
         self.isRead = false
     }

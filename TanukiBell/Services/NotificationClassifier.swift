@@ -13,7 +13,8 @@ struct NotificationClassifier {
         let projectName = mr.project?.fullPath ?? todo.project?.fullPath ?? "Unknown"
         let mrIID = Int(mr.iid)
 
-        let title = "\(type.displayTitle) by \(senderName)"
+        let shortName = abbreviateName(senderName)
+        let title = "\(type.displayTitle) by \(shortName)"
         let threadID = "gitlab-\(projectName)-!\(mr.iid)"
 
         return ClassifiedNotification(
@@ -27,8 +28,19 @@ struct NotificationClassifier {
             senderAvatarURL: todo.author?.avatarUrl.flatMap(URL.init(string:)),
             threadID: threadID,
             notificationID: "todo-\(todo.id)",
-            gitlabTodoID: todo.id
+            gitlabTodoID: todo.id,
+            bodyExcerpt: todo.body
         )
+    }
+
+    /// "Daniel Kuhlwein" → "Daniel K", "Alice" → "Alice"
+    static func abbreviateName(_ name: String) -> String {
+        let parts = name.split(separator: " ")
+        guard parts.count >= 2, let first = parts.first, let last = parts.last else {
+            return name
+        }
+        let lastInitial = last.prefix(1).uppercased()
+        return "\(first) \(lastInitial)"
     }
 
     private static func mapActionToType(

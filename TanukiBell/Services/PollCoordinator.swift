@@ -184,11 +184,12 @@ actor PollCoordinator {
                     mrTitle: mr.title,
                     mrIID: mr.iid,
                     sourceURL: URL(string: mr.webUrl),
-                    senderName: mr.author?.name ?? "Someone",
+                    senderName: NotificationClassifier.abbreviateName(mr.author?.name ?? "Someone"),
                     senderAvatarURL: nil,
                     threadID: "gitlab-\(mr.projectId)-!\(mr.iid)",
                     notificationID: "mr-state-\(mr.id)-\(mr.state)",
-                    gitlabTodoID: ""
+                    gitlabTodoID: "",
+                    bodyExcerpt: nil
                 )
                 NotificationDispatcher.send(notification)
                 try await persistNotificationRecord(notification)
@@ -213,9 +214,10 @@ actor PollCoordinator {
                     if let lastID = snap.lastNoteID, note.id <= lastID { continue }
 
                     if note.isEdited {
+                        let shortName = NotificationClassifier.abbreviateName(note.author.name)
                         let notification = ClassifiedNotification(
                             type: .commentEdited,
-                            title: "Comment Edited by \(note.author.name)",
+                            title: "Comment Edited by \(shortName)",
                             projectName: snap.projectName,
                             mrTitle: snap.title,
                             mrIID: snap.iid,
@@ -224,7 +226,8 @@ actor PollCoordinator {
                             senderAvatarURL: nil,
                             threadID: "gitlab-\(snap.projectName)-!\(snap.iid)",
                             notificationID: "note-edited-\(note.id)",
-                            gitlabTodoID: ""
+                            gitlabTodoID: "",
+                            bodyExcerpt: note.body
                         )
                         NotificationDispatcher.send(notification)
                         try await persistNotificationRecord(notification)
@@ -322,7 +325,8 @@ actor PollCoordinator {
             mrTitle: classified.mrTitle,
             sourceURL: classified.sourceURL?.absoluteString,
             senderName: classified.senderName,
-            senderAvatarURL: classified.senderAvatarURL?.absoluteString
+            senderAvatarURL: classified.senderAvatarURL?.absoluteString,
+            bodyExcerpt: classified.bodyExcerpt
         )
         context.insert(record)
         try context.save()
@@ -339,7 +343,8 @@ actor PollCoordinator {
             mrTitle: notification.mrTitle,
             sourceURL: notification.sourceURL?.absoluteString,
             senderName: notification.senderName,
-            senderAvatarURL: notification.senderAvatarURL?.absoluteString
+            senderAvatarURL: notification.senderAvatarURL?.absoluteString,
+            bodyExcerpt: notification.bodyExcerpt
         )
         context.insert(record)
         try context.save()
