@@ -108,7 +108,7 @@ struct MenuBarPopover: View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 0) {
                 if !unreadNotifications.isEmpty {
-                    sectionHeader("Pending (\(unreadNotifications.count))")
+                    sectionHeader("New (\(unreadNotifications.count))")
 
                     ForEach(unreadNotifications) { record in
                         NotificationRowView(record: record)
@@ -121,7 +121,7 @@ struct MenuBarPopover: View {
                 }
 
                 if !recentRead.isEmpty {
-                    sectionHeader("Recent")
+                    sectionHeader("Seen")
 
                     ForEach(recentRead) { record in
                         NotificationRowView(record: record)

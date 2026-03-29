@@ -22,6 +22,8 @@ struct NotificationDispatcher {
         content.userInfo = [
             "url": notification.sourceURL?.absoluteString ?? "",
             "todoID": notification.gitlabTodoID,
+            "notificationType": notification.type.rawValue,
+            "mrTitle": notification.mrTitle,
         ]
 
         // Attach per-type icon from asset catalog

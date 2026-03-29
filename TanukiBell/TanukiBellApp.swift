@@ -32,6 +32,9 @@ struct TanukiBellApp: App {
                 .modelContainer(modelContainer)
                 .frame(width: 360, height: 480)
                 .onAppear {
+                    // Share model container with AppDelegate for notification handling
+                    appDelegate.modelContainer = modelContainer
+
                     // Auto-start polling if token exists
                     if KeychainStore.loadToken() != nil {
                         appState.startPolling(modelContainer: modelContainer)

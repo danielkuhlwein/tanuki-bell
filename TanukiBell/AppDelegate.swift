@@ -1,7 +1,10 @@
 import AppKit
 import UserNotifications
+import SwiftData
 
 final class AppDelegate: NSObject, NSApplicationDelegate, @unchecked Sendable {
+
+    var modelContainer: ModelContainer?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         UNUserNotificationCenter.current().delegate = self
@@ -70,6 +73,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate, @unchecked Sendable {
             .setNotificationCategories([mrCategory])
     }
 
+    // MARK: - Mark notification as read in SwiftData
+
+    @MainActor
+    private func markNotificationRead(mrTitle: String) {
+        guard let container = modelContainer else { return }
+        let context = ModelContext(container)
+        let descriptor = FetchDescriptor<NotificationRecord>(
+            predicate: #Predicate { $0.mrTitle == mrTitle && !$0.isRead }
+        )
+        do {
+            let records = try context.fetch(descriptor)
+            for record in records {
+                record.isRead = true
+            }
+            try context.save()
+        } catch {
+            print("[AppDelegate] Failed to mark notification read: \(error)")
+        }
+    }
 }
 
 // MARK: - UNUserNotificationCenterDelegate
@@ -89,6 +111,12 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
                let url = URL(string: urlString) {
                 NSWorkspace.shared.open(url)
             }
+            // Mark as read in SwiftData
+            if let mrTitle = userInfo["mrTitle"] as? String {
+                Task { @MainActor in
+                    self.markNotificationRead(mrTitle: mrTitle)
+                }
+            }
         case "MARK_DONE":
             if let todoID = userInfo["todoID"] as? String,
                let token = KeychainStore.loadToken() {
@@ -96,6 +124,12 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
                 let service = GitLabService(baseURL: URL(string: baseURLString) ?? URL(string: "https://gitlab.com")!)
                 Task {
                     try? await service.markTodoAsDone(id: todoID, token: token)
+                }
+            }
+            // Also mark as read
+            if let mrTitle = userInfo["mrTitle"] as? String {
+                Task { @MainActor in
+                    self.markNotificationRead(mrTitle: mrTitle)
                 }
             }
         default:
