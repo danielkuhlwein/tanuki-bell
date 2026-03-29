@@ -7,8 +7,10 @@ struct NotificationDispatcher {
     static func send(_ notification: ClassifiedNotification) {
         // Skip if user has disabled this notification type
         guard NotificationPreferences.isEnabled(notification.type) else {
+            print("[Dispatch] Skipped (disabled): \(notification.type.rawValue)")
             return
         }
+        print("[Dispatch] Sending: \(notification.type.rawValue) — \(notification.title)")
 
         let content = UNMutableNotificationContent()
         content.title = notification.title

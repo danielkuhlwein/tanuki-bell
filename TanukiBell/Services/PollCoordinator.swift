@@ -88,33 +88,44 @@ actor PollCoordinator {
     // MARK: - Primary poll (todos)
 
     private func pollTodos() async {
-        guard let token = KeychainStore.loadToken() else { return }
+        guard let token = KeychainStore.loadToken() else {
+            print("[Poll] No token found, skipping")
+            return
+        }
 
         do {
             let connection = try await gitLabService.fetchPendingTodos(token: token)
+            let total = connection.nodes.count
             let newTodos = try await filterNewTodos(connection.nodes)
+
+            print("[Poll] Fetched \(total) todos, \(newTodos.count) new")
 
             for todo in newTodos {
                 guard let classified = NotificationClassifier.classify(todo: todo) else {
+                    print("[Poll]   Skipped (non-MR target): \(todo.id)")
                     try await markProcessed(todoID: todo.id)
                     continue
                 }
+                print("[Poll]   \(classified.type.rawValue): \"\(classified.title)\" — \(classified.projectName) !\(classified.mrIID ?? 0)")
                 NotificationDispatcher.send(classified)
                 try await persist(classified: classified, todoID: todo.id)
             }
 
             let unreadCount = try await fetchUnreadCount()
             onUpdate(unreadCount, .now)
+            print("[Poll] Unread count: \(unreadCount)")
 
             if connection.pageInfo.hasNextPage, let cursor = connection.pageInfo.endCursor {
+                print("[Poll] Fetching next page...")
                 await pollNextPage(token: token, cursor: cursor)
             }
 
         } catch let serviceError as GitLabServiceError where serviceError == .notModified {
+            print("[Poll] 304 Not Modified")
             let unreadCount = (try? await fetchUnreadCount()) ?? 0
             onUpdate(unreadCount, .now)
         } catch {
-            print("[PollCoordinator] Todo poll failed: \(error)")
+            print("[Poll] Todo poll failed: \(error)")
         }
     }
 
@@ -145,24 +156,26 @@ actor PollCoordinator {
     private func pollSupplemental() async {
         guard let token = KeychainStore.loadToken() else { return }
 
+        print("[Supplemental] Starting MR state + notes poll")
         await pollMRStates(token: token)
         await pollNotes(token: token)
-
-        // TTL cleanup — delete processed todos older than 7 days
         await cleanupOldRecords()
+        print("[Supplemental] Done")
     }
 
     /// Detect merged/closed MR transitions
     private func pollMRStates(token: String) async {
         do {
-            let since = Date.now.addingTimeInterval(-300) // last 5 minutes
+            let since = Date.now.addingTimeInterval(-300)
             let mergeRequests = try await gitLabService.fetchAssignedMergeRequests(
                 token: token, updatedAfter: since
             )
+            print("[Supplemental] MR state: \(mergeRequests.count) MRs updated recently")
 
             for mr in mergeRequests {
                 let transition = try await detectMRTransition(mr)
                 guard let transition else { continue }
+                print("[Supplemental] MR state transition: !\(mr.iid) → \(transition.rawValue)")
 
                 let notification = ClassifiedNotification(
                     type: transition,
@@ -189,6 +202,7 @@ actor PollCoordinator {
     private func pollNotes(token: String) async {
         do {
             let snapshots = try await fetchTrackedMRSnapshots()
+            print("[Supplemental] Notes: checking \(snapshots.count) tracked MRs")
 
             for snap in snapshots {
                 let notes = try await gitLabService.fetchMRNotes(
