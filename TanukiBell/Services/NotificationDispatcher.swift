@@ -1,0 +1,49 @@
+import Foundation
+import UserNotifications
+import AppKit
+
+struct NotificationDispatcher {
+
+    static func send(_ notification: ClassifiedNotification) {
+        let content = UNMutableNotificationContent()
+        content.title = notification.title
+        content.subtitle = notification.projectName
+        content.body = notification.mrTitle
+        content.threadIdentifier = notification.threadID
+        content.categoryIdentifier = "MERGE_REQUEST"
+        content.sound = .default
+        content.userInfo = [
+            "url": notification.sourceURL?.absoluteString ?? "",
+            "todoID": notification.gitlabTodoID,
+        ]
+
+        // Attach per-type icon from asset catalog
+        if let image = notification.type.iconImage,
+           let tiffData = image.tiffRepresentation,
+           let bitmap = NSBitmapImageRep(data: tiffData),
+           let pngData = bitmap.representation(using: .png, properties: [:]) {
+            let tempURL = FileManager.default.temporaryDirectory
+                .appendingPathComponent(UUID().uuidString + ".png")
+            try? pngData.write(to: tempURL)
+            if let attachment = try? UNNotificationAttachment(
+                identifier: "icon",
+                url: tempURL,
+                options: [UNNotificationAttachmentOptionsTypeHintKey: "public.png"]
+            ) {
+                content.attachments = [attachment]
+            }
+        }
+
+        let request = UNNotificationRequest(
+            identifier: notification.notificationID,
+            content: content,
+            trigger: nil
+        )
+
+        UNUserNotificationCenter.current().add(request) { error in
+            if let error {
+                print("Failed to deliver notification: \(error)")
+            }
+        }
+    }
+}

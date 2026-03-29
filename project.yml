@@ -1,0 +1,54 @@
+name: TanukiBell
+options:
+  bundleIdPrefix: com.danielkuhlwein
+  deploymentTarget:
+    macOS: "14.0"
+  xcodeVersion: "16.0"
+  generateEmptyDirectories: true
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    MACOSX_DEPLOYMENT_TARGET: "14.0"
+    SWIFT_STRICT_CONCURRENCY: complete
+
+targets:
+  TanukiBell:
+    type: application
+    platform: macOS
+    sources:
+      - TanukiBell
+    resources:
+      - TanukiBell/Resources/Assets.xcassets
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.danielkuhlwein.tanuki-bell
+        PRODUCT_NAME: "Tanuki Bell"
+        PRODUCT_MODULE_NAME: TanukiBell
+        MARKETING_VERSION: "1.0.0"
+        CURRENT_PROJECT_VERSION: "1"
+        INFOPLIST_FILE: TanukiBell/Info.plist
+        CODE_SIGN_ENTITLEMENTS: TanukiBell/TanukiBell.entitlements
+        CODE_SIGN_IDENTITY: "-"
+        CODE_SIGN_STYLE: Manual
+        ENABLE_HARDENED_RUNTIME: false
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        COMBINE_HIDPI_IMAGES: true
+    entitlements:
+      path: TanukiBell/TanukiBell.entitlements
+      properties:
+        com.apple.security.cs.disable-library-validation: true
+
+  TanukiBellTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - TanukiBellTests
+    dependencies:
+      - target: TanukiBell
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.danielkuhlwein.tanuki-bell-tests
+        GENERATE_INFOPLIST_FILE: true
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/Tanuki Bell.app/Contents/MacOS/Tanuki Bell"
+        BUNDLE_LOADER: "$(TEST_HOST)"
