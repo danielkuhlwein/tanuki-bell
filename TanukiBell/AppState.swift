@@ -11,6 +11,7 @@ final class AppState {
 
     private var pollCoordinator: PollCoordinator?
     private var gitLabService: GitLabService?
+    private var idleMonitor: IdleMonitor?
 
     /// Start polling with the given model container.
     /// Reads token from Keychain and GitLab URL from UserDefaults.
@@ -48,11 +49,22 @@ final class AppState {
             await coordinator.start(interval: pollInterval)
         }
 
+        // Start idle monitoring for adaptive polling
+        let monitor = IdleMonitor { [weak coordinator] isIdle in
+            Task {
+                await coordinator?.adjustInterval(idle: isIdle)
+            }
+        }
+        monitor.start()
+        self.idleMonitor = monitor
+
         isConnected = true
     }
 
     /// Stop polling (e.g. when token is removed).
     func stopPolling() {
+        idleMonitor?.stop()
+        idleMonitor = nil
         Task {
             await pollCoordinator?.stop()
         }

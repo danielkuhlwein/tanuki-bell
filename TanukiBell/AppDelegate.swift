@@ -60,9 +60,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
                 NSWorkspace.shared.open(url)
             }
         case "MARK_DONE":
-            if let todoID = userInfo["todoID"] as? String {
-                // TODO: Phase 1 — call GitLabService.markTodoAsDone
-                print("Mark done: \(todoID)")
+            if let todoID = userInfo["todoID"] as? String,
+               let token = KeychainStore.loadToken() {
+                let baseURLString = UserDefaults.standard.string(forKey: "gitlab_url") ?? "https://gitlab.com"
+                let service = GitLabService(baseURL: URL(string: baseURLString) ?? URL(string: "https://gitlab.com")!)
+                Task {
+                    try? await service.markTodoAsDone(id: todoID, token: token)
+                }
             }
         default:
             break

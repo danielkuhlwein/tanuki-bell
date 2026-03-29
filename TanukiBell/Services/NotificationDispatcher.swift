@@ -5,13 +5,18 @@ import AppKit
 struct NotificationDispatcher {
 
     static func send(_ notification: ClassifiedNotification) {
+        // Skip if user has disabled this notification type
+        guard NotificationPreferences.isEnabled(notification.type) else {
+            return
+        }
+
         let content = UNMutableNotificationContent()
         content.title = notification.title
         content.subtitle = notification.projectName
         content.body = notification.mrTitle
         content.threadIdentifier = notification.threadID
         content.categoryIdentifier = "MERGE_REQUEST"
-        content.sound = .default
+        content.sound = UserDefaults.standard.bool(forKey: "sound_enabled") ? .default : nil
         content.userInfo = [
             "url": notification.sourceURL?.absoluteString ?? "",
             "todoID": notification.gitlabTodoID,

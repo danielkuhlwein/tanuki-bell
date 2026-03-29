@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		0C432C8F383B6AADBA0C2140 /* NotificationRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09B758812838EE86B0A6F544 /* NotificationRecord.swift */; };
 		0D68DFE1EDE88B1C0ED0E8CC /* TanukiBellApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40EE182A8ACD551F6EF38665 /* TanukiBellApp.swift */; };
+		100A76ED9DC73CCEC5001AC0 /* IdleMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC141EF579782F9958BDE875 /* IdleMonitor.swift */; };
 		487F23FFC7EEC3D7BB67B42B /* PollState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15D3CB7E97E1B3EA3503AA08 /* PollState.swift */; };
 		55D7EE4FADFA29AF5545239E /* NotificationClassifierTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0309D3A6E00E7CD712AF9B4F /* NotificationClassifierTests.swift */; };
 		5653F1F940A3C5A2D94D2CC6 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EE749B7EA8C04BABA7DDE87 /* AppState.swift */; };
@@ -28,6 +29,7 @@
 		C3440A31240B4563CD9DF47A /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EF6A3F497701B14D4CBB85E /* SettingsView.swift */; };
 		CC3A9FD5B12196F50045D165 /* NotificationDispatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC19F9C5F37D4094EA333EC2 /* NotificationDispatcher.swift */; };
 		CE1E166673247353A361815C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 95EECE73FAE1467B8EB8E813 /* Assets.xcassets */; };
+		FB079DA231119AC7ACF0AD3F /* NotificationPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = 455B793610CFB7B12AED646B /* NotificationPreferences.swift */; };
 		FED0F46D7E9D084C308696DA /* NotificationClassifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3488B07FC0C8C2D240C0A631 /* NotificationClassifier.swift */; };
 /* End PBXBuildFile section */
 
@@ -49,12 +51,13 @@
 		2EF6A3F497701B14D4CBB85E /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		3488B07FC0C8C2D240C0A631 /* NotificationClassifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationClassifier.swift; sourceTree = "<group>"; };
 		40EE182A8ACD551F6EF38665 /* TanukiBellApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TanukiBellApp.swift; sourceTree = "<group>"; };
+		455B793610CFB7B12AED646B /* NotificationPreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationPreferences.swift; sourceTree = "<group>"; };
 		56B452E78B55583DC31877ED /* GitLabService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitLabService.swift; sourceTree = "<group>"; };
 		5F5A3C27079F86F6FDDF1E46 /* Queries.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Queries.swift; sourceTree = "<group>"; };
 		658925DF08B53382B452CFA1 /* PollCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PollCoordinator.swift; sourceTree = "<group>"; };
 		691C815F1729AFCF759FAAB1 /* NotificationSettingsTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationSettingsTab.swift; sourceTree = "<group>"; };
 		7253C6ACF2891B5F56460161 /* TanukiBell.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = TanukiBell.entitlements; sourceTree = "<group>"; };
-		7DB2C610319672A7DBC08569 /* Tanuki Bell.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Tanuki Bell.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		7DB2C610319672A7DBC08569 /* TanukiBell.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TanukiBell.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7EE749B7EA8C04BABA7DDE87 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
 		824013EAA1A975389DCFE420 /* ConnectionSettingsTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionSettingsTab.swift; sourceTree = "<group>"; };
 		95EECE73FAE1467B8EB8E813 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -66,6 +69,7 @@
 		CC7B4EA0291551110977BC52 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		CDABEAAB3190CCFC42D93E4E /* NotificationType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationType.swift; sourceTree = "<group>"; };
 		D23002CDA2411739574565E9 /* ProcessedTodo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessedTodo.swift; sourceTree = "<group>"; };
+		EC141EF579782F9958BDE875 /* IdleMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IdleMonitor.swift; sourceTree = "<group>"; };
 		ED499AED583F3B86A3A2CBEA /* NotificationRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationRowView.swift; sourceTree = "<group>"; };
 		EF8078CF71D029B0E9B0916C /* TanukiBellTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TanukiBellTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -116,9 +120,11 @@
 			isa = PBXGroup;
 			children = (
 				56B452E78B55583DC31877ED /* GitLabService.swift */,
+				EC141EF579782F9958BDE875 /* IdleMonitor.swift */,
 				CB726A49F5E4E6990060A5CB /* KeychainStore.swift */,
 				3488B07FC0C8C2D240C0A631 /* NotificationClassifier.swift */,
 				CC19F9C5F37D4094EA333EC2 /* NotificationDispatcher.swift */,
+				455B793610CFB7B12AED646B /* NotificationPreferences.swift */,
 				658925DF08B53382B452CFA1 /* PollCoordinator.swift */,
 			);
 			path = Services;
@@ -136,7 +142,7 @@
 		B82A35EE4A1A5BF796A98BCF /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				7DB2C610319672A7DBC08569 /* Tanuki Bell.app */,
+				7DB2C610319672A7DBC08569 /* TanukiBell.app */,
 				EF8078CF71D029B0E9B0916C /* TanukiBellTests.xctest */,
 			);
 			name = Products;
@@ -203,7 +209,7 @@
 			packageProductDependencies = (
 			);
 			productName = TanukiBell;
-			productReference = 7DB2C610319672A7DBC08569 /* Tanuki Bell.app */;
+			productReference = 7DB2C610319672A7DBC08569 /* TanukiBell.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -214,6 +220,11 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1600;
+				TargetAttributes = {
+					71E5221C36E0F662740F05AC = {
+						ProvisioningStyle = Manual;
+					};
+				};
 			};
 			buildConfigurationList = FA9740E59B41EA2150153D5C /* Build configuration list for PBXProject "TanukiBell" */;
 			developmentRegion = en;
@@ -265,10 +276,12 @@
 				605581C8FC06B11AED528C28 /* GeneralSettingsTab.swift in Sources */,
 				62A6B66CF8E4EBE16E7F3558 /* GitLabAPITypes.swift in Sources */,
 				790570F6788C01850004E059 /* GitLabService.swift in Sources */,
+				100A76ED9DC73CCEC5001AC0 /* IdleMonitor.swift in Sources */,
 				7297933A737F93F7CFE0598E /* KeychainStore.swift in Sources */,
 				6E07E1AD78F18BCC61E71B8F /* MenuBarPopover.swift in Sources */,
 				FED0F46D7E9D084C308696DA /* NotificationClassifier.swift in Sources */,
 				CC3A9FD5B12196F50045D165 /* NotificationDispatcher.swift in Sources */,
+				FB079DA231119AC7ACF0AD3F /* NotificationPreferences.swift in Sources */,
 				0C432C8F383B6AADBA0C2140 /* NotificationRecord.swift in Sources */,
 				B331DD2012503D96DA2B4949 /* NotificationRowView.swift in Sources */,
 				BCEC493B103B54B6AB8418B2 /* NotificationSettingsTab.swift in Sources */,
@@ -315,11 +328,10 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = TanukiBell/TanukiBell.entitlements;
-				CODE_SIGN_IDENTITY = "Apple Development";
-				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = GU5JQEWL2V;
 				ENABLE_HARDENED_RUNTIME = NO;
 				INFOPLIST_FILE = TanukiBell/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -330,7 +342,6 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "com.danielkuhlwein.tanuki-bell";
 				PRODUCT_MODULE_NAME = TanukiBell;
 				PRODUCT_NAME = "Tanuki Bell";
-				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = macosx;
 			};
 			name = Release;
@@ -340,11 +351,10 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = TanukiBell/TanukiBell.entitlements;
-				CODE_SIGN_IDENTITY = "Apple Development";
-				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = GU5JQEWL2V;
 				ENABLE_HARDENED_RUNTIME = NO;
 				INFOPLIST_FILE = TanukiBell/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -355,7 +365,6 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "com.danielkuhlwein.tanuki-bell";
 				PRODUCT_MODULE_NAME = TanukiBell;
 				PRODUCT_NAME = "Tanuki Bell";
-				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = macosx;
 			};
 			name = Debug;

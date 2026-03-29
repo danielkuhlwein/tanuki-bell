@@ -6,13 +6,12 @@ struct NotificationSettingsTab: View {
     var body: some View {
         Form {
             Section("Notification Types") {
-                Text("Configure which notification types are shown.")
+                Text("Choose which notification types trigger alerts.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
-                // TODO: Phase 2 — per-type toggles backed by @AppStorage
                 ForEach(NotificationType.allCases, id: \.self) { type in
-                    Toggle(type.displayTitle, isOn: .constant(type.defaultEnabled))
+                    NotificationTypeToggle(type: type)
                 }
             }
 
@@ -21,5 +20,26 @@ struct NotificationSettingsTab: View {
             }
         }
         .padding()
+    }
+}
+
+/// Individual toggle backed by @AppStorage keyed per notification type.
+private struct NotificationTypeToggle: View {
+    let type: NotificationType
+    @State private var isEnabled: Bool
+
+    init(type: NotificationType) {
+        self.type = type
+        // Read initial value from UserDefaults, falling back to the type's default
+        self._isEnabled = State(
+            initialValue: NotificationPreferences.isEnabled(type)
+        )
+    }
+
+    var body: some View {
+        Toggle(type.displayTitle, isOn: $isEnabled)
+            .onChange(of: isEnabled) { _, newValue in
+                NotificationPreferences.setEnabled(type, value: newValue)
+            }
     }
 }
