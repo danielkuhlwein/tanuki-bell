@@ -18,26 +18,37 @@ struct ConnectionSettingsTab: View {
     }
 
     var body: some View {
-        Form {
-            Section("GitLab Instance") {
+        VStack(alignment: .leading, spacing: 20) {
+            // GitLab Instance
+            VStack(alignment: .leading, spacing: 6) {
+                Text("GitLab Instance")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+
                 TextField("GitLab URL", text: $gitlabURL)
                     .textFieldStyle(.roundedBorder)
 
                 Text("Base URL of your GitLab instance. Use **https://gitlab.com** for GitLab.com (not your group URL).")
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.tertiary)
             }
 
-            Section("Authentication") {
+            // Authentication
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Authentication")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+
                 SecureField("Personal Access Token", text: $token)
                     .textFieldStyle(.roundedBorder)
 
                 Text("Create a legacy token at GitLab \u{2192} Profile \u{2192} Access Tokens with the **read_api** scope.")
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.tertiary)
             }
 
-            Section {
+            // Actions
+            VStack(spacing: 10) {
                 HStack {
                     Button("Test Connection") {
                         testConnection()
