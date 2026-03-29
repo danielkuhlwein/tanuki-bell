@@ -1,22 +1,27 @@
 import Foundation
 import SwiftData
 
-actor PollCoordinator {
-    private var primaryTask: Task<Void, Never>?
-    private var supplementalTask: Task<Void, Never>?
+@MainActor
+final class PollCoordinator {
+    private var primaryTimer: DispatchSourceTimer?
+    private var supplementalTimer: DispatchSourceTimer?
+    private let queue = DispatchQueue(
+        label: "com.danielkuhlwein.tanuki-bell.poll",
+        qos: .utility
+    )
     private var currentInterval: TimeInterval = 30
     private var userInterval: TimeInterval = 30
 
     private let gitLabService: GitLabService
     private let modelContainer: ModelContainer
-    private let onUpdate: @Sendable (Int, Date) -> Void
+    private let onUpdate: (Int, Date) -> Void
 
-    var isRunning: Bool { primaryTask != nil }
+    var isRunning: Bool { primaryTimer != nil }
 
     init(
         gitLabService: GitLabService,
         modelContainer: ModelContainer,
-        onUpdate: @escaping @Sendable (Int, Date) -> Void
+        onUpdate: @escaping (Int, Date) -> Void
     ) {
         self.gitLabService = gitLabService
         self.modelContainer = modelContainer
@@ -24,97 +29,121 @@ actor PollCoordinator {
     }
 
     func start(interval: TimeInterval = 30) {
-        primaryTask?.cancel()
-        supplementalTask?.cancel()
+        primaryTimer?.cancel()
+        supplementalTimer?.cancel()
         userInterval = interval
         currentInterval = interval
 
-        primaryTask = Task { [weak self] in
-            while !Task.isCancelled {
-                await self?.pollTodos()
-                try? await Task.sleep(for: .seconds(interval))
-            }
+        // Primary poll (todos) — user-configured interval
+        let t = DispatchSource.makeTimerSource(queue: queue)
+        t.schedule(deadline: .now(), repeating: interval, leeway: .seconds(5))
+        t.setEventHandler { [weak self] in
+            Task { @MainActor in self?.pollTodos() }
         }
+        t.resume()
+        primaryTimer = t
 
-        supplementalTask = Task { [weak self] in
-            try? await Task.sleep(for: .seconds(10)) // initial delay
-            while !Task.isCancelled {
-                await self?.pollSupplemental()
-                try? await Task.sleep(for: .seconds(120))
-            }
+        // Supplemental poll (MR state + notes) — 2 minutes
+        let s = DispatchSource.makeTimerSource(queue: queue)
+        s.schedule(deadline: .now() + 10, repeating: 120, leeway: .seconds(10))
+        s.setEventHandler { [weak self] in
+            Task { @MainActor in self?.pollSupplemental() }
         }
+        s.resume()
+        supplementalTimer = s
     }
 
     func stop() {
-        primaryTask?.cancel()
-        primaryTask = nil
-        supplementalTask?.cancel()
-        supplementalTask = nil
+        primaryTimer?.cancel()
+        primaryTimer = nil
+        supplementalTimer?.cancel()
+        supplementalTimer = nil
     }
 
     func adjustInterval(idle: Bool) {
         let interval: TimeInterval = idle ? 120 : userInterval
         guard interval != currentInterval else { return }
         currentInterval = interval
-        start(interval: interval)
+
+        primaryTimer?.cancel()
+        let t = DispatchSource.makeTimerSource(queue: queue)
+        t.schedule(deadline: .now(), repeating: interval, leeway: .seconds(5))
+        t.setEventHandler { [weak self] in
+            Task { @MainActor in self?.pollTodos() }
+        }
+        t.resume()
+        primaryTimer = t
+
+        // Supplemental: 5min when idle, 2min when active
+        let suppInterval: TimeInterval = idle ? 300 : 120
+        supplementalTimer?.cancel()
+        let s = DispatchSource.makeTimerSource(queue: queue)
+        s.schedule(deadline: .now(), repeating: suppInterval, leeway: .seconds(10))
+        s.setEventHandler { [weak self] in
+            Task { @MainActor in self?.pollSupplemental() }
+        }
+        s.resume()
+        supplementalTimer = s
     }
 
     // MARK: - Primary poll (todos)
 
-    private func pollTodos() async {
+    private func pollTodos() {
         guard let token = KeychainStore.loadToken() else {
             print("[Poll] No token found, skipping")
             return
         }
 
-        do {
-            let connection = try await gitLabService.fetchPendingTodos(token: token)
-            let total = connection.nodes.count
-            let newTodos = try await filterNewTodos(connection.nodes)
+        Task {
+            do {
+                let connection = try await gitLabService.fetchPendingTodos(token: token)
+                let total = connection.nodes.count
+                let newTodos = filterNewTodos(connection.nodes)
 
-            print("[Poll] Fetched \(total) todos, \(newTodos.count) new")
+                print("[Poll] Fetched \(total) todos, \(newTodos.count) new")
 
-            for todo in newTodos {
-                guard let classified = NotificationClassifier.classify(todo: todo) else {
-                    print("[Poll]   Skipped (non-MR target): \(todo.id)")
-                    try await markProcessed(todoID: todo.id)
-                    continue
+                for todo in newTodos {
+                    guard let classified = NotificationClassifier.classify(todo: todo) else {
+                        print("[Poll]   Skipped (non-MR target): \(todo.id)")
+                        markProcessed(todoID: todo.id)
+                        continue
+                    }
+                    print("[Poll]   \(classified.type.rawValue): \"\(classified.title)\" — \(classified.projectName) !\(classified.mrIID ?? 0)")
+                    NotificationDispatcher.send(classified)
+                    persist(classified: classified, todoID: todo.id)
                 }
-                print("[Poll]   \(classified.type.rawValue): \"\(classified.title)\" — \(classified.projectName) !\(classified.mrIID ?? 0)")
-                NotificationDispatcher.send(classified)
-                try await persist(classified: classified, todoID: todo.id)
+
+                let unreadCount = fetchUnreadCount()
+                onUpdate(unreadCount, .now)
+                print("[Poll] Unread count: \(unreadCount)")
+
+                if connection.pageInfo.hasNextPage, let cursor = connection.pageInfo.endCursor {
+                    print("[Poll] Fetching next page...")
+                    await pollNextPage(token: token, cursor: cursor)
+                }
+
+            } catch let serviceError as GitLabServiceError where serviceError == .notModified {
+                print("[Poll] 304 Not Modified")
+                let unreadCount = fetchUnreadCount()
+                onUpdate(unreadCount, .now)
+            } catch {
+                print("[Poll] Todo poll failed: \(error)")
             }
-
-            let unreadCount = try await fetchUnreadCount()
-            onUpdate(unreadCount, .now)
-            print("[Poll] Unread count: \(unreadCount)")
-
-            if connection.pageInfo.hasNextPage, let cursor = connection.pageInfo.endCursor {
-                print("[Poll] Fetching next page...")
-                await pollNextPage(token: token, cursor: cursor)
-            }
-
-        } catch let serviceError as GitLabServiceError where serviceError == .notModified {
-            print("[Poll] 304 Not Modified")
-            let unreadCount = (try? await fetchUnreadCount()) ?? 0
-            onUpdate(unreadCount, .now)
-        } catch {
-            print("[Poll] Todo poll failed: \(error)")
         }
     }
 
     private func pollNextPage(token: String, cursor: String) async {
         do {
             let connection = try await gitLabService.fetchPendingTodos(token: token, after: cursor)
-            let newTodos = try await filterNewTodos(connection.nodes)
+            let newTodos = filterNewTodos(connection.nodes)
 
             for todo in newTodos {
                 guard let classified = NotificationClassifier.classify(todo: todo) else {
-                    try await markProcessed(todoID: todo.id)
+                    markProcessed(todoID: todo.id)
                     continue
                 }
                 NotificationDispatcher.send(classified)
-                try await persist(classified: classified, todoID: todo.id)
+                persist(classified: classified, todoID: todo.id)
             }
 
             if connection.pageInfo.hasNextPage, let next = connection.pageInfo.endCursor {
@@ -127,14 +156,16 @@ actor PollCoordinator {
 
     // MARK: - Supplemental poll (MR state + notes)
 
-    private func pollSupplemental() async {
+    private func pollSupplemental() {
         guard let token = KeychainStore.loadToken() else { return }
 
         print("[Supplemental] Starting MR state + notes poll")
-        await pollMRStates(token: token)
-        await pollNotes(token: token)
-        await cleanupOldRecords()
-        print("[Supplemental] Done")
+        Task {
+            await pollMRStates(token: token)
+            await pollNotes(token: token)
+            cleanupOldRecords()
+            print("[Supplemental] Done")
+        }
     }
 
     /// Detect merged/closed MR transitions
@@ -147,7 +178,7 @@ actor PollCoordinator {
             print("[Supplemental] MR state: \(mergeRequests.count) MRs updated recently")
 
             for mr in mergeRequests {
-                let transition = try await detectMRTransition(mr)
+                let transition = detectMRTransition(mr)
                 guard let transition else { continue }
                 print("[Supplemental] MR state transition: !\(mr.iid) → \(transition.rawValue)")
 
@@ -166,7 +197,7 @@ actor PollCoordinator {
                     bodyExcerpt: nil
                 )
                 NotificationDispatcher.send(notification)
-                try await persistNotificationRecord(notification)
+                persistNotificationRecord(notification)
             }
         } catch {
             print("[PollCoordinator] MR state poll failed: \(error)")
@@ -176,7 +207,7 @@ actor PollCoordinator {
     /// Detect edited comments on tracked MRs
     private func pollNotes(token: String) async {
         do {
-            let snapshots = try await fetchTrackedMRSnapshots()
+            let snapshots = fetchTrackedMRSnapshots()
             print("[Supplemental] Notes: checking \(snapshots.count) tracked MRs")
 
             for snap in snapshots {
@@ -204,12 +235,12 @@ actor PollCoordinator {
                             bodyExcerpt: note.body
                         )
                         NotificationDispatcher.send(notification)
-                        try await persistNotificationRecord(notification)
+                        persistNotificationRecord(notification)
                     }
                 }
 
                 if let latestID = notes.first?.id {
-                    try await updateTrackedMRNoteID(mrID: snap.mrID, noteID: latestID)
+                    updateTrackedMRNoteID(mrID: snap.mrID, noteID: latestID)
                 }
             }
         } catch {
@@ -219,73 +250,75 @@ actor PollCoordinator {
 
     // MARK: - MR state transition detection
 
-    @MainActor
-    private func detectMRTransition(_ mr: RESTMergeRequest) throws -> NotificationType? {
+    private func detectMRTransition(_ mr: RESTMergeRequest) -> NotificationType? {
         let context = ModelContext(modelContainer)
         let mrID = mr.id
         let descriptor = FetchDescriptor<TrackedMergeRequest>(
             predicate: #Predicate { $0.mrID == mrID }
         )
-        let existing = try context.fetch(descriptor).first
 
-        if let tracked = existing {
-            let oldState = tracked.state
-            let newState = mr.state
+        do {
+            let existing = try context.fetch(descriptor).first
 
-            tracked.state = newState
-            tracked.lastSeenAt = .now
-            try context.save()
+            if let tracked = existing {
+                let oldState = tracked.state
+                let newState = mr.state
 
-            if oldState != newState {
-                switch newState {
-                case "merged": return .merged
-                case "closed": return .closed
-                default: return nil
+                tracked.state = newState
+                tracked.lastSeenAt = .now
+                try context.save()
+
+                if oldState != newState {
+                    switch newState {
+                    case "merged": return .merged
+                    case "closed": return .closed
+                    default: return nil
+                    }
                 }
+                return nil
+            } else {
+                let tracked = TrackedMergeRequest(
+                    mrID: mr.id,
+                    iid: mr.iid,
+                    projectID: mr.projectId,
+                    projectName: "Project #\(mr.projectId)",
+                    title: mr.title,
+                    state: mr.state,
+                    webUrl: mr.webUrl,
+                    authorName: mr.author?.name ?? "Unknown"
+                )
+                context.insert(tracked)
+                try context.save()
+                return nil
             }
-            return nil
-        } else {
-            let tracked = TrackedMergeRequest(
-                mrID: mr.id,
-                iid: mr.iid,
-                projectID: mr.projectId,
-                projectName: "Project #\(mr.projectId)",
-                title: mr.title,
-                state: mr.state,
-                webUrl: mr.webUrl,
-                authorName: mr.author?.name ?? "Unknown"
-            )
-            context.insert(tracked)
-            try context.save()
+        } catch {
+            print("[PollCoordinator] MR transition detection failed: \(error)")
             return nil
         }
     }
 
     // MARK: - SwiftData operations
 
-    @MainActor
-    private func filterNewTodos(_ todos: [GitLabTodo]) throws -> [GitLabTodo] {
+    private func filterNewTodos(_ todos: [GitLabTodo]) -> [GitLabTodo] {
         let context = ModelContext(modelContainer)
         let allIDs = todos.map(\.id)
 
         let descriptor = FetchDescriptor<ProcessedTodo>(
             predicate: #Predicate { allIDs.contains($0.gitlabTodoID) }
         )
-        let existing = try context.fetch(descriptor)
+        let existing = (try? context.fetch(descriptor)) ?? []
         let existingIDs = Set(existing.map(\.gitlabTodoID))
 
         return todos.filter { !existingIDs.contains($0.id) }
     }
 
-    @MainActor
-    private func markProcessed(todoID: String) throws {
+    private func markProcessed(todoID: String) {
         let context = ModelContext(modelContainer)
         context.insert(ProcessedTodo(gitlabTodoID: todoID))
-        try context.save()
+        try? context.save()
     }
 
-    @MainActor
-    private func persist(classified: ClassifiedNotification, todoID: String) throws {
+    private func persist(classified: ClassifiedNotification, todoID: String) {
         let context = ModelContext(modelContainer)
         context.insert(ProcessedTodo(gitlabTodoID: todoID))
 
@@ -301,11 +334,10 @@ actor PollCoordinator {
             bodyExcerpt: classified.bodyExcerpt
         )
         context.insert(record)
-        try context.save()
+        try? context.save()
     }
 
-    @MainActor
-    private func persistNotificationRecord(_ notification: ClassifiedNotification) throws {
+    private func persistNotificationRecord(_ notification: ClassifiedNotification) {
         let context = ModelContext(modelContainer)
         let record = NotificationRecord(
             notificationType: notification.type.rawValue,
@@ -319,20 +351,18 @@ actor PollCoordinator {
             bodyExcerpt: notification.bodyExcerpt
         )
         context.insert(record)
-        try context.save()
+        try? context.save()
     }
 
-    @MainActor
-    private func fetchUnreadCount() throws -> Int {
+    private func fetchUnreadCount() -> Int {
         let context = ModelContext(modelContainer)
         let descriptor = FetchDescriptor<NotificationRecord>(
             predicate: #Predicate { !$0.isRead }
         )
-        return try context.fetchCount(descriptor)
+        return (try? context.fetchCount(descriptor)) ?? 0
     }
 
-    /// Sendable snapshot of TrackedMergeRequest for cross-actor use
-    struct MRSnapshot: Sendable {
+    struct MRSnapshot {
         let mrID: Int
         let iid: Int
         let projectID: Int
@@ -342,13 +372,12 @@ actor PollCoordinator {
         let lastNoteID: Int?
     }
 
-    @MainActor
-    private func fetchTrackedMRSnapshots() throws -> [MRSnapshot] {
+    private func fetchTrackedMRSnapshots() -> [MRSnapshot] {
         let context = ModelContext(modelContainer)
         let descriptor = FetchDescriptor<TrackedMergeRequest>(
             sortBy: [SortDescriptor(\.lastSeenAt, order: .reverse)]
         )
-        return try context.fetch(descriptor).map { mr in
+        return ((try? context.fetch(descriptor)) ?? []).map { mr in
             MRSnapshot(
                 mrID: mr.mrID, iid: mr.iid, projectID: mr.projectID,
                 projectName: mr.projectName, title: mr.title,
@@ -357,46 +386,35 @@ actor PollCoordinator {
         }
     }
 
-    @MainActor
-    private func updateTrackedMRNoteID(mrID: Int, noteID: Int) throws {
+    private func updateTrackedMRNoteID(mrID: Int, noteID: Int) {
         let context = ModelContext(modelContainer)
         let descriptor = FetchDescriptor<TrackedMergeRequest>(
             predicate: #Predicate { $0.mrID == mrID }
         )
-        if let tracked = try context.fetch(descriptor).first {
+        if let tracked = try? context.fetch(descriptor).first {
             tracked.lastNoteID = noteID
-            try context.save()
+            try? context.save()
         }
     }
 
     // MARK: - TTL cleanup
 
-    @MainActor
-    private func cleanupOldRecords() async {
+    private func cleanupOldRecords() {
         let context = ModelContext(modelContainer)
         let cutoff = Date.now.addingTimeInterval(-7 * 24 * 60 * 60)
 
         do {
-            let oldTodos = FetchDescriptor<ProcessedTodo>(
+            for todo in try context.fetch(FetchDescriptor<ProcessedTodo>(
                 predicate: #Predicate { $0.processedAt < cutoff }
-            )
-            for todo in try context.fetch(oldTodos) {
-                context.delete(todo)
-            }
+            )) { context.delete(todo) }
 
-            let oldNotifications = FetchDescriptor<NotificationRecord>(
+            for record in try context.fetch(FetchDescriptor<NotificationRecord>(
                 predicate: #Predicate { $0.receivedAt < cutoff }
-            )
-            for record in try context.fetch(oldNotifications) {
-                context.delete(record)
-            }
+            )) { context.delete(record) }
 
-            let oldMRs = FetchDescriptor<TrackedMergeRequest>(
+            for mr in try context.fetch(FetchDescriptor<TrackedMergeRequest>(
                 predicate: #Predicate { $0.lastSeenAt < cutoff }
-            )
-            for mr in try context.fetch(oldMRs) {
-                context.delete(mr)
-            }
+            )) { context.delete(mr) }
 
             try context.save()
         } catch {

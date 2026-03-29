@@ -32,27 +32,22 @@ final class AppState {
             gitLabService: service,
             modelContainer: modelContainer,
             onUpdate: { [weak self] unreadCount, pollTime in
-                Task { @MainActor in
-                    self?.unreadCount = unreadCount
-                    self?.lastPollTime = pollTime
-                    self?.isConnected = true
-                    self?.connectionError = nil
-                }
+                self?.unreadCount = unreadCount
+                self?.lastPollTime = pollTime
+                self?.isConnected = true
+                self?.connectionError = nil
             }
         )
         self.pollCoordinator = coordinator
 
         let interval = UserDefaults.standard.double(forKey: "polling_interval")
         let pollInterval = interval > 0 ? interval : 30.0
-
-        Task {
-            await coordinator.start(interval: pollInterval)
-        }
+        coordinator.start(interval: pollInterval)
 
         // Start idle monitoring for adaptive polling
         let monitor = IdleMonitor { [weak coordinator] isIdle in
-            Task {
-                await coordinator?.adjustInterval(idle: isIdle)
+            Task { @MainActor in
+                coordinator?.adjustInterval(idle: isIdle)
             }
         }
         monitor.start()
@@ -65,9 +60,7 @@ final class AppState {
     func stopPolling() {
         idleMonitor?.stop()
         idleMonitor = nil
-        Task {
-            await pollCoordinator?.stop()
-        }
+        pollCoordinator?.stop()
         pollCoordinator = nil
         gitLabService = nil
         isConnected = false
