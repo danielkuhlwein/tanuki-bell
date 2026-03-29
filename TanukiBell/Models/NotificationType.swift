@@ -28,7 +28,7 @@ enum NotificationType: String, CaseIterable, Codable {
         case .approved:           return "Approved"
         case .merged:             return "Merged"
         case .closed:             return "Closed"
-        case .mentioned:          return "You Were Mentioned"
+        case .mentioned:          return "Mentioned"
         case .pipelineFailed:     return "Pipeline Failed"
         case .newCommitsPushed:   return "New Commits Pushed"
         case .prActivity:         return "MR Activity"
