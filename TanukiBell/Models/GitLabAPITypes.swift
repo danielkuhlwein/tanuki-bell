@@ -47,17 +47,38 @@ struct GitLabTodo: Decodable, Identifiable {
     let project: GitLabProject?
 }
 
-enum TodoAction: String, Decodable {
+enum TodoAction: Decodable, Equatable {
     case assigned
     case mentioned
-    case buildFailed = "build_failed"
+    case buildFailed
     case marked
-    case approvalRequired = "approval_required"
+    case approvalRequired
     case unmergeable
-    case directlyAddressed = "directly_addressed"
-    case reviewRequested = "review_requested"
-    case mergeTrainRemoved = "merge_train_removed"
-    case memberAccessRequested = "member_access_requested"
+    case directlyAddressed
+    case reviewRequested
+    case reviewSubmitted
+    case mergeTrainRemoved
+    case memberAccessRequested
+    case unknown(String)
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let value = try container.decode(String.self)
+        switch value {
+        case "assigned":                self = .assigned
+        case "mentioned":               self = .mentioned
+        case "build_failed":            self = .buildFailed
+        case "marked":                  self = .marked
+        case "approval_required":       self = .approvalRequired
+        case "unmergeable":             self = .unmergeable
+        case "directly_addressed":      self = .directlyAddressed
+        case "review_requested":        self = .reviewRequested
+        case "review_submitted":        self = .reviewSubmitted
+        case "merge_train_removed":     self = .mergeTrainRemoved
+        case "member_access_requested": self = .memberAccessRequested
+        default:                        self = .unknown(value)
+        }
+    }
 }
 
 // MARK: - Target types

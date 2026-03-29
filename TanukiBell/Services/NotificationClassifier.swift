@@ -45,9 +45,11 @@ struct NotificationClassifier {
             return .pipelineFailed
         case .approvalRequired:
             return .approved
+        case .reviewSubmitted:
+            return .approved
         case .mergeTrainRemoved:
             return mrState == .merged ? .merged : .prActivity
-        case .marked, .unmergeable, .memberAccessRequested:
+        case .marked, .unmergeable, .memberAccessRequested, .unknown:
             return .prActivity
         }
     }

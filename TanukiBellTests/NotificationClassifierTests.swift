@@ -87,6 +87,18 @@ final class NotificationClassifierTests: XCTestCase {
         XCTAssertEqual(result?.threadID, "gitlab-team/repo-!99")
     }
 
+    func testReviewSubmitted() {
+        let todo = makeTodo(action: .reviewSubmitted)
+        let result = NotificationClassifier.classify(todo: todo)
+        XCTAssertEqual(result?.type, .approved)
+    }
+
+    func testUnknownActionMapsToActivity() {
+        let todo = makeTodo(action: .unknown("some_future_action"))
+        let result = NotificationClassifier.classify(todo: todo)
+        XCTAssertEqual(result?.type, .prActivity)
+    }
+
     func testNonMRTargetReturnsNil() {
         let todo = GitLabTodo(
             id: "gid://gitlab/Todo/2",
