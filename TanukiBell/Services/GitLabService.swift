@@ -22,7 +22,7 @@ actor GitLabService {
         let url = baseURL.appendingPathComponent("api/graphql")
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue(token, forHTTPHeaderField: "PRIVATE-TOKEN")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
         if let etag = lastETag {
@@ -76,7 +76,7 @@ actor GitLabService {
     func testConnection(token: String) async throws -> String {
         let url = baseURL.appendingPathComponent("api/v4/user")
         var request = URLRequest(url: url)
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue(token, forHTTPHeaderField: "PRIVATE-TOKEN")
 
         let (data, response) = try await session.data(for: request)
 
@@ -103,7 +103,7 @@ actor GitLabService {
         let url = baseURL.appendingPathComponent("api/graphql")
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue(token, forHTTPHeaderField: "PRIVATE-TOKEN")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
         let mutation = """

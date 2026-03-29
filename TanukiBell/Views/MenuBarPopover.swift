@@ -35,11 +35,8 @@ struct MenuBarPopover: View {
                     Text("Open Settings to add your GitLab token.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                    Button("Open Settings...") {
-                        NSApp.sendAction(
-                            Selector(("showSettingsWindow:")),
-                            to: nil, from: nil
-                        )
+                    SettingsLink {
+                        Text("Open Settings...")
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -56,11 +53,8 @@ struct MenuBarPopover: View {
 
                 Spacer()
 
-                Button("Settings...") {
-                    NSApp.sendAction(
-                        Selector(("showSettingsWindow:")),
-                        to: nil, from: nil
-                    )
+                SettingsLink {
+                    Text("Settings...")
                 }
 
                 Button("Quit") {
