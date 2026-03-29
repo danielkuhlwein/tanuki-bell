@@ -23,6 +23,10 @@ struct ConnectionSettingsTab: View {
                 TextField("GitLab URL", text: $gitlabURL)
                     .textFieldStyle(.roundedBorder)
 
+                Text("Base URL of your GitLab instance. Use **https://gitlab.com** for GitLab.com (not your group URL).")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
                 SecureField("Personal Access Token", text: $token)
                     .textFieldStyle(.roundedBorder)
 
