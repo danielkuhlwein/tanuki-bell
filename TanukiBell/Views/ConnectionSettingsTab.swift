@@ -45,13 +45,7 @@ struct ConnectionSettingsTab: View {
                 Text("Create a legacy token at GitLab \u{2192} Profile \u{2192} Access Tokens with the **read_api** scope.")
                     .font(.caption)
                     .foregroundStyle(.tertiary)
-            }
 
-            Spacer()
-                .frame(height: 10)
-
-            // Actions
-            VStack(spacing: 10) {
                 HStack {
                     Button("Test Connection") {
                         testConnection()
@@ -82,21 +76,24 @@ struct ConnectionSettingsTab: View {
                             .font(.caption)
                     }
                 }
+                .padding(.top, 4)
+            }
 
-                HStack {
-                    Button("Save & Start Polling") {
-                        saveAndStart()
-                    }
-                    .disabled(token.isEmpty)
-                    .keyboardShortcut(.defaultAction)
+            // Actions
+            HStack {
+                Button("Save & Start Polling") {
+                    saveAndStart()
+                }
+                .disabled(token.isEmpty)
+                .keyboardShortcut(.defaultAction)
 
-                    if appState.isConnected {
-                        Button("Stop Polling") {
-                            appState.stopPolling()
-                        }
+                if appState.isConnected {
+                    Button("Stop Polling") {
+                        appState.stopPolling()
                     }
                 }
             }
+            .padding(.top, 10)
         }
         .padding()
         .onAppear {
