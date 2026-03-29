@@ -4,33 +4,47 @@ struct NotificationSettingsTab: View {
     @AppStorage("sound_enabled") private var soundEnabled = true
 
     var body: some View {
-        Form {
-            Section("Notification Types") {
-                Text("Choose which notification types trigger alerts.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                // Notification Types
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Notification Types")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
 
-                ForEach(NotificationType.allCases, id: \.self) { type in
-                    NotificationTypeToggle(type: type)
+                    Text("Choose which notification types trigger alerts.")
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        ForEach(NotificationType.allCases, id: \.self) { type in
+                            NotificationTypeToggle(type: type)
+                        }
+                    }
+                }
+
+                // Sound
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Sound")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+
+                    Toggle("Play notification sound", isOn: $soundEnabled)
                 }
             }
-
-            Section("Sound") {
-                Toggle("Play notification sound", isOn: $soundEnabled)
-            }
+            .padding(.vertical)
+            .padding(.horizontal, 40)
         }
-        .padding()
     }
 }
 
-/// Individual toggle backed by @AppStorage keyed per notification type.
+/// Individual toggle backed by UserDefaults keyed per notification type.
 private struct NotificationTypeToggle: View {
     let type: NotificationType
     @State private var isEnabled: Bool
 
     init(type: NotificationType) {
         self.type = type
-        // Read initial value from UserDefaults, falling back to the type's default
         self._isEnabled = State(
             initialValue: NotificationPreferences.isEnabled(type)
         )
