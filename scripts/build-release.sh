@@ -98,12 +98,19 @@ if [ "$PUBLISH" = "--publish" ]; then
 ### Installation
 1. Download \`TanukiBell-${VERSION}.dmg\` below
 2. Open the DMG and drag **Tanuki Bell** to Applications
-3. First launch: right-click → **Open** → confirm (one-time Gatekeeper bypass)
+3. On first launch, macOS will block the app since it is not notarized. To allow it:
+   - **Double-click** the app (you will see a blocked dialog — click **Done**)
+   - Open **System Settings → Privacy & Security**
+   - Scroll down to find the blocked message and click **Open Anyway**
+   - Authenticate with your password or Touch ID
+   - This is a **one-time** step — all subsequent launches work normally
 
 ### Setup
-1. Create a GitLab Personal Access Token with \`read_api\` scope
-2. Click the bell in your menu bar → Settings → paste your token
-3. Click **Save & Start Polling**"
+1. Create a GitLab **legacy** Personal Access Token with \`read_api\` scope
+2. Click the bell in your menu bar → **Settings...**
+3. Paste your token and click **Test Connection**
+4. Click **Save & Start Polling**
+5. Enable notifications when prompted (or in System Settings → Notifications → Tanuki Bell)"
 
     gh release create "$TAG" \
         "$DMG_PATH" \
