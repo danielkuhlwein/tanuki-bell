@@ -26,6 +26,10 @@ struct ConnectionSettingsTab: View {
                 SecureField("Personal Access Token", text: $token)
                     .textFieldStyle(.roundedBorder)
 
+                Text("Create a legacy token at GitLab \u{2192} Profile \u{2192} Access Tokens with the **read_api** scope.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
                 HStack {
                     Button("Test Connection") {
                         testConnection()

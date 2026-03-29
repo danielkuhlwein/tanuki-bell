@@ -117,9 +117,11 @@ The Todos API covers ~80% of notification types. Two supplemental polls (lower f
 ### 4.1 Authentication
 
 **v1: Personal Access Token (PAT)**
-- User generates a PAT with `read_api` scope in GitLab UI
-- App stores it in Keychain via `SecItemAdd` with `kSecAttrService: "com.gitlab-notifier"` and `kSecAttrAccount: "pat"`
-- Every API request includes `Authorization: Bearer <PAT>` header
+- User generates a **legacy** PAT in GitLab UI (Profile → Access Tokens)
+- Required scope: **`read_api`** (grants read access to GraphQL and REST APIs, including todos, merge requests, notes, and user profile)
+- `read_api` is the minimum scope that covers all v1 functionality (polling, classification, notifications)
+- App stores the token in Keychain via `SecItemAdd` with `kSecAttrService: "com.danielkuhlwein.tanuki-bell"` and `kSecAttrAccount: "pat"`
+- Every API request includes `PRIVATE-TOKEN: <PAT>` header (not `Authorization: Bearer`, which is for OAuth2 tokens)
 
 **v2 (future): OAuth2 Device Authorization Grant**
 - Available since GitLab 17.9 (GA)
