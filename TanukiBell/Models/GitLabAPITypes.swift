@@ -145,6 +145,50 @@ struct GitLabProject: Decodable {
     let fullPath: String
 }
 
+// MARK: - REST API types (supplemental polls)
+
+struct RESTMergeRequest: Decodable, Identifiable {
+    let id: Int
+    let iid: Int
+    let title: String
+    let state: String
+    let webUrl: String
+    let author: RESTUser?
+    let projectId: Int
+
+    enum CodingKeys: String, CodingKey {
+        case id, iid, title, state
+        case webUrl = "web_url"
+        case author
+        case projectId = "project_id"
+    }
+}
+
+struct RESTNote: Decodable, Identifiable {
+    let id: Int
+    let body: String
+    let author: RESTUser
+    let createdAt: Date
+    let updatedAt: Date
+    let system: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case id, body, author, system
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+    }
+
+    var isEdited: Bool {
+        updatedAt > createdAt
+    }
+}
+
+struct RESTUser: Decodable {
+    let id: Int
+    let name: String
+    let username: String
+}
+
 // MARK: - Classification output
 
 struct ClassifiedNotification {

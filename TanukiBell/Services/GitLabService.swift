@@ -126,6 +126,75 @@ actor GitLabService {
             throw GitLabServiceError.invalidResponse
         }
     }
+
+    // MARK: - Supplemental: MR state poll
+
+    func fetchAssignedMergeRequests(
+        token: String,
+        updatedAfter: Date
+    ) async throws -> [RESTMergeRequest] {
+        let formatter = ISO8601DateFormatter()
+        let timestamp = formatter.string(from: updatedAfter)
+
+        var components = URLComponents(
+            url: baseURL.appendingPathComponent("api/v4/merge_requests"),
+            resolvingAgainstBaseURL: false
+        )!
+        components.queryItems = [
+            URLQueryItem(name: "scope", value: "assigned_to_me"),
+            URLQueryItem(name: "state", value: "all"),
+            URLQueryItem(name: "updated_after", value: timestamp),
+            URLQueryItem(name: "per_page", value: "50"),
+        ]
+
+        var request = URLRequest(url: components.url!)
+        request.setValue(token, forHTTPHeaderField: "PRIVATE-TOKEN")
+
+        let (data, response) = try await session.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw GitLabServiceError.invalidResponse
+        }
+        guard httpResponse.statusCode == 200 else {
+            throw GitLabServiceError.httpError(httpResponse.statusCode)
+        }
+
+        return try JSONDecoder().decode([RESTMergeRequest].self, from: data)
+    }
+
+    // MARK: - Supplemental: MR notes poll
+
+    func fetchMRNotes(
+        token: String,
+        projectID: Int,
+        mrIID: Int
+    ) async throws -> [RESTNote] {
+        let path = "api/v4/projects/\(projectID)/merge_requests/\(mrIID)/notes"
+        var components = URLComponents(
+            url: baseURL.appendingPathComponent(path),
+            resolvingAgainstBaseURL: false
+        )!
+        components.queryItems = [
+            URLQueryItem(name: "sort", value: "desc"),
+            URLQueryItem(name: "per_page", value: "5"),
+        ]
+
+        var request = URLRequest(url: components.url!)
+        request.setValue(token, forHTTPHeaderField: "PRIVATE-TOKEN")
+
+        let (data, response) = try await session.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw GitLabServiceError.invalidResponse
+        }
+        guard httpResponse.statusCode == 200 else {
+            throw GitLabServiceError.httpError(httpResponse.statusCode)
+        }
+
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        return try decoder.decode([RESTNote].self, from: data)
+    }
 }
 
 enum GitLabServiceError: LocalizedError {

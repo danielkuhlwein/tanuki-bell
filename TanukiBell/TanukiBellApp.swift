@@ -11,6 +11,7 @@ struct TanukiBellApp: App {
             ProcessedTodo.self,
             NotificationRecord.self,
             PollState.self,
+            TrackedMergeRequest.self,
         ])
         let config = ModelConfiguration(
             "TanukiBell",

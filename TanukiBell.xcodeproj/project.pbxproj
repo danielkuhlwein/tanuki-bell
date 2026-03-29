@@ -27,8 +27,10 @@
 		BC7A7F70F8C0BA7029883259 /* NotificationType.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDABEAAB3190CCFC42D93E4E /* NotificationType.swift */; };
 		BCEC493B103B54B6AB8418B2 /* NotificationSettingsTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 691C815F1729AFCF759FAAB1 /* NotificationSettingsTab.swift */; };
 		C3440A31240B4563CD9DF47A /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EF6A3F497701B14D4CBB85E /* SettingsView.swift */; };
+		CC31B0BE4AAECA905FC23109 /* TrackedMergeRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5322B1253DA746F51862249 /* TrackedMergeRequest.swift */; };
 		CC3A9FD5B12196F50045D165 /* NotificationDispatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC19F9C5F37D4094EA333EC2 /* NotificationDispatcher.swift */; };
 		CE1E166673247353A361815C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 95EECE73FAE1467B8EB8E813 /* Assets.xcassets */; };
+		E8A275A06EED610394DA92B7 /* NotificationHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 357A706A8CFB0EFC2D8D34DE /* NotificationHistoryView.swift */; };
 		FB079DA231119AC7ACF0AD3F /* NotificationPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = 455B793610CFB7B12AED646B /* NotificationPreferences.swift */; };
 		FED0F46D7E9D084C308696DA /* NotificationClassifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3488B07FC0C8C2D240C0A631 /* NotificationClassifier.swift */; };
 /* End PBXBuildFile section */
@@ -50,6 +52,7 @@
 		2808B91DF140DA8501C7A43E /* GitLabAPITypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitLabAPITypes.swift; sourceTree = "<group>"; };
 		2EF6A3F497701B14D4CBB85E /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		3488B07FC0C8C2D240C0A631 /* NotificationClassifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationClassifier.swift; sourceTree = "<group>"; };
+		357A706A8CFB0EFC2D8D34DE /* NotificationHistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationHistoryView.swift; sourceTree = "<group>"; };
 		40EE182A8ACD551F6EF38665 /* TanukiBellApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TanukiBellApp.swift; sourceTree = "<group>"; };
 		455B793610CFB7B12AED646B /* NotificationPreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationPreferences.swift; sourceTree = "<group>"; };
 		56B452E78B55583DC31877ED /* GitLabService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitLabService.swift; sourceTree = "<group>"; };
@@ -62,6 +65,7 @@
 		824013EAA1A975389DCFE420 /* ConnectionSettingsTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionSettingsTab.swift; sourceTree = "<group>"; };
 		95EECE73FAE1467B8EB8E813 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		9FA0090047C4AA7F8773DFC8 /* MenuBarPopover.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarPopover.swift; sourceTree = "<group>"; };
+		B5322B1253DA746F51862249 /* TrackedMergeRequest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackedMergeRequest.swift; sourceTree = "<group>"; };
 		C6D0B9CB80DA2F77C7E209F2 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		C786639565ABEC34BCFE712D /* GeneralSettingsTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeneralSettingsTab.swift; sourceTree = "<group>"; };
 		CB726A49F5E4E6990060A5CB /* KeychainStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainStore.swift; sourceTree = "<group>"; };
@@ -97,6 +101,7 @@
 				824013EAA1A975389DCFE420 /* ConnectionSettingsTab.swift */,
 				C786639565ABEC34BCFE712D /* GeneralSettingsTab.swift */,
 				9FA0090047C4AA7F8773DFC8 /* MenuBarPopover.swift */,
+				357A706A8CFB0EFC2D8D34DE /* NotificationHistoryView.swift */,
 				ED499AED583F3B86A3A2CBEA /* NotificationRowView.swift */,
 				691C815F1729AFCF759FAAB1 /* NotificationSettingsTab.swift */,
 				2EF6A3F497701B14D4CBB85E /* SettingsView.swift */,
@@ -112,6 +117,7 @@
 				CDABEAAB3190CCFC42D93E4E /* NotificationType.swift */,
 				15D3CB7E97E1B3EA3503AA08 /* PollState.swift */,
 				D23002CDA2411739574565E9 /* ProcessedTodo.swift */,
+				B5322B1253DA746F51862249 /* TrackedMergeRequest.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -281,6 +287,7 @@
 				6E07E1AD78F18BCC61E71B8F /* MenuBarPopover.swift in Sources */,
 				FED0F46D7E9D084C308696DA /* NotificationClassifier.swift in Sources */,
 				CC3A9FD5B12196F50045D165 /* NotificationDispatcher.swift in Sources */,
+				E8A275A06EED610394DA92B7 /* NotificationHistoryView.swift in Sources */,
 				FB079DA231119AC7ACF0AD3F /* NotificationPreferences.swift in Sources */,
 				0C432C8F383B6AADBA0C2140 /* NotificationRecord.swift in Sources */,
 				B331DD2012503D96DA2B4949 /* NotificationRowView.swift in Sources */,
@@ -292,6 +299,7 @@
 				6E4A3961984683503D3C1BB6 /* Queries.swift in Sources */,
 				C3440A31240B4563CD9DF47A /* SettingsView.swift in Sources */,
 				0D68DFE1EDE88B1C0ED0E8CC /* TanukiBellApp.swift in Sources */,
+				CC31B0BE4AAECA905FC23109 /* TrackedMergeRequest.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

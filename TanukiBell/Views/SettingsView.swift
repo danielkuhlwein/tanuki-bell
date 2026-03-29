@@ -17,8 +17,13 @@ struct SettingsView: View {
                 .tabItem {
                     Label("General", systemImage: "gear")
                 }
+
+            NotificationHistoryView()
+                .tabItem {
+                    Label("History", systemImage: "clock.arrow.circlepath")
+                }
         }
-        .frame(width: 450, height: 450)
+        .frame(width: 500, height: 500)
         .onAppear {
             // LSUIElement apps don't auto-activate — force the app to front
             NSApp.activate(ignoringOtherApps: true)
