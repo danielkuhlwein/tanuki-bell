@@ -5,6 +5,7 @@ import SwiftData
 final class AppDelegate: NSObject, NSApplicationDelegate, @unchecked Sendable {
 
     var modelContainer: ModelContainer?
+    var appState: AppState?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         UNUserNotificationCenter.current().delegate = self
@@ -88,6 +89,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, @unchecked Sendable {
                 record.isRead = true
             }
             try context.save()
+
+            // Update bell badge
+            let unreadDescriptor = FetchDescriptor<NotificationRecord>(
+                predicate: #Predicate { !$0.isRead }
+            )
+            let unreadCount = try context.fetchCount(unreadDescriptor)
+            appState?.unreadCount = unreadCount
         } catch {
             print("[AppDelegate] Failed to mark notification read: \(error)")
         }

@@ -15,7 +15,11 @@ struct NotificationDispatcher {
         let content = UNMutableNotificationContent()
         content.title = notification.title
         content.subtitle = notification.projectName
-        content.body = notification.mrTitle
+        if let excerpt = notification.bodyExcerpt, !excerpt.isEmpty {
+            content.body = "\(notification.mrTitle)\n\(excerpt)"
+        } else {
+            content.body = notification.mrTitle
+        }
         content.threadIdentifier = notification.threadID
         content.categoryIdentifier = "MERGE_REQUEST"
         content.sound = UserDefaults.standard.bool(forKey: "sound_enabled") ? .default : nil

@@ -35,7 +35,7 @@ struct NotificationRowView: View {
 
                 // MR reference: "!1003 - frontend/cav-ts-apps-tools"
                 if let iid = record.mrIID {
-                    Text("!\(iid) \u{2014} \(stripOrg(record.projectName))")
+                    Text("!\(iid, format: .number.grouping(.never)) \u{2014} \(stripOrg(record.projectName))")
                         .font(.system(size: 11))
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
@@ -51,9 +51,13 @@ struct NotificationRowView: View {
                 if let excerpt = record.bodyExcerpt, !excerpt.isEmpty {
                     Text(excerpt)
                         .font(.system(size: 10))
-                        .foregroundStyle(.tertiary)
+                        .foregroundStyle(.primary)
                         .lineLimit(2)
-                        .padding(.top, 1)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 3)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 4))
+                        .padding(.top, 2)
                 }
             }
         }
