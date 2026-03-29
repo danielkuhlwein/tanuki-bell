@@ -19,5 +19,9 @@ struct SettingsView: View {
                 }
         }
         .frame(width: 450, height: 300)
+        .onAppear {
+            // LSUIElement apps don't auto-activate — force the app to front
+            NSApp.activate(ignoringOtherApps: true)
+        }
     }
 }
