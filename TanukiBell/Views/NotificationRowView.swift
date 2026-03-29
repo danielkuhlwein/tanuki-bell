@@ -17,17 +17,17 @@ struct NotificationRowView: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(record.title)
-                    .font(.system(size: 15))
+                    .font(.system(size: 13))
                     .fontWeight(record.isRead ? .regular : .semibold)
 
                 if let iid = record.mrIID {
                     Text("\(record.projectName) \u{00B7} !\(iid)")
-                        .font(.system(size: 12))
+                        .font(.system(size: 11))
                         .foregroundStyle(.secondary)
                 }
 
                 Text(record.mrTitle)
-                    .font(.system(size: 12))
+                    .font(.system(size: 11))
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
             }
@@ -35,7 +35,7 @@ struct NotificationRowView: View {
             Spacer()
 
             Text(record.receivedAt, style: .relative)
-                .font(.system(size: 11))
+                .font(.system(size: 10))
                 .foregroundStyle(.tertiary)
         }
         .padding(.vertical, 4)
