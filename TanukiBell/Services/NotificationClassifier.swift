@@ -4,6 +4,7 @@ struct NotificationClassifier {
 
     static func classify(todo: GitLabTodo) -> ClassifiedNotification? {
         guard case .mergeRequest(let mr) = todo.target else {
+            print("[Classify] Skipped todo \(todo.id): target is \(todo.target == nil ? "nil" : "non-MR"), action=\(todo.action)")
             return nil
         }
 

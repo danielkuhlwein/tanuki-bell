@@ -11,6 +11,7 @@ enum GraphQLQueries {
                 body
                 createdAt
                 target {
+                  __typename
                   ... on MergeRequest {
                     iid
                     title
