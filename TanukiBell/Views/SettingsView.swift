@@ -18,7 +18,7 @@ struct SettingsView: View {
                     Label("General", systemImage: "gear")
                 }
         }
-        .frame(width: 450, height: 400)
+        .frame(width: 450, height: 450)
         .onAppear {
             // LSUIElement apps don't auto-activate — force the app to front
             NSApp.activate(ignoringOtherApps: true)
