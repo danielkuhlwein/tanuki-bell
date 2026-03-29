@@ -1,9 +1,12 @@
 import SwiftUI
+import SwiftData
 import ServiceManagement
 
 struct GeneralSettingsTab: View {
-    @AppStorage("polling_interval") private var pollingInterval: Double = 30
+    @Environment(AppState.self) private var appState
+    @Environment(\.modelContext) private var modelContext
 
+    @AppStorage("polling_interval") private var pollingInterval: Double = 30
     @State private var launchAtLogin = false
 
     var body: some View {
@@ -12,6 +15,11 @@ struct GeneralSettingsTab: View {
                 HStack {
                     Text("Poll interval: \(Int(pollingInterval))s")
                     Slider(value: $pollingInterval, in: 15...300, step: 15)
+                }
+                .onChange(of: pollingInterval) { _, _ in
+                    if appState.isConnected {
+                        appState.restartPolling(modelContainer: modelContext.container)
+                    }
                 }
             }
 

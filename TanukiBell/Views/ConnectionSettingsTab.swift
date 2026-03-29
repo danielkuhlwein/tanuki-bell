@@ -1,7 +1,11 @@
 import SwiftUI
+import SwiftData
 
 struct ConnectionSettingsTab: View {
-    @State private var gitlabURL: String = "https://gitlab.com"
+    @Environment(AppState.self) private var appState
+    @Environment(\.modelContext) private var modelContext
+
+    @AppStorage("gitlab_url") private var gitlabURL: String = "https://gitlab.com"
     @State private var token: String = ""
     @State private var connectionStatus: ConnectionStatus = .unknown
     @State private var connectedUserName: String?
@@ -53,10 +57,19 @@ struct ConnectionSettingsTab: View {
                     }
                 }
 
-                Button("Save Token") {
-                    saveToken()
+                HStack {
+                    Button("Save & Start Polling") {
+                        saveAndStart()
+                    }
+                    .disabled(token.isEmpty)
+                    .keyboardShortcut(.defaultAction)
+
+                    if appState.isConnected {
+                        Button("Stop Polling") {
+                            appState.stopPolling()
+                        }
+                    }
                 }
-                .disabled(token.isEmpty)
             }
         }
         .padding()
@@ -76,25 +89,23 @@ struct ConnectionSettingsTab: View {
                     await gitLabService.updateBaseURL(url)
                 }
                 let name = try await gitLabService.testConnection(token: token)
-                await MainActor.run {
-                    connectedUserName = name
-                    connectionStatus = .connected
-                    isTesting = false
-                }
+                connectedUserName = name
+                connectionStatus = .connected
+                isTesting = false
             } catch {
-                await MainActor.run {
-                    connectionStatus = .failed(error.localizedDescription)
-                    isTesting = false
-                }
+                connectionStatus = .failed(error.localizedDescription)
+                isTesting = false
             }
         }
     }
 
-    private func saveToken() {
+    private func saveAndStart() {
         do {
             try KeychainStore.saveToken(token)
+            appState.restartPolling(modelContainer: modelContext.container)
+            connectionStatus = .connected
         } catch {
-            print("Failed to save token: \(error)")
+            connectionStatus = .failed("Failed to save token: \(error.localizedDescription)")
         }
     }
 }
