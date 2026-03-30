@@ -1,0 +1,15 @@
+<?xml version="1.0" standalone="yes"?>
+<rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">
+    <channel>
+        <title>Tanuki Bell</title>
+        <item>
+            <title>0.1.1</title>
+            <pubDate>Sun, 29 Mar 2026 23:00:37 -0600</pubDate>
+            <link>https://github.com/danielkuhlwein/tanuki-bell/releases</link>
+            <sparkle:version>2</sparkle:version>
+            <sparkle:shortVersionString>0.1.1</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <enclosure url="https://github.com/danielkuhlwein/tanuki-bell/releases/download/v0.1.1/TanukiBell-0.1.1.dmg" length="3635453" type="application/octet-stream" sparkle:edSignature="/EhPVQPYTHbnqM8TYxnYvgvZvKjs+kadYXstV8x1LhqZYycaGeHVZnd0x0t6LWhaizU8yKYPBwJxoS8HzmQnBw=="/>
+        </item>
+    </channel>
+</rss>
