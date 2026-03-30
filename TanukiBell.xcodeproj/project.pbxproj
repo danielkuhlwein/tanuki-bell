@@ -12,6 +12,7 @@
 		100A76ED9DC73CCEC5001AC0 /* IdleMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC141EF579782F9958BDE875 /* IdleMonitor.swift */; };
 		193EBD7C3982224201F4D715 /* AboutTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D1C96D4EDC675A9331716D2 /* AboutTab.swift */; };
 		2415B1299CFE34FEB101842F /* MRSnapshotDiffer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 402FC6350632C2BF363A5890 /* MRSnapshotDiffer.swift */; };
+		47A50B4F0A7756D19AE0B6B0 /* String+HTML.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55A0671053E35C649479C3E6 /* String+HTML.swift */; };
 		487F23FFC7EEC3D7BB67B42B /* PollState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15D3CB7E97E1B3EA3503AA08 /* PollState.swift */; };
 		55D7EE4FADFA29AF5545239E /* NotificationClassifierTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0309D3A6E00E7CD712AF9B4F /* NotificationClassifierTests.swift */; };
 		5653F1F940A3C5A2D94D2CC6 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EE749B7EA8C04BABA7DDE87 /* AppState.swift */; };
@@ -67,6 +68,7 @@
 		40EE182A8ACD551F6EF38665 /* TanukiBellApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TanukiBellApp.swift; sourceTree = "<group>"; };
 		446E9F5E55F7ACCBC9D491C8 /* SystemNoteParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemNoteParserTests.swift; sourceTree = "<group>"; };
 		455B793610CFB7B12AED646B /* NotificationPreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationPreferences.swift; sourceTree = "<group>"; };
+		55A0671053E35C649479C3E6 /* String+HTML.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "String+HTML.swift"; sourceTree = "<group>"; };
 		56B452E78B55583DC31877ED /* GitLabService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitLabService.swift; sourceTree = "<group>"; };
 		5F5A3C27079F86F6FDDF1E46 /* Queries.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Queries.swift; sourceTree = "<group>"; };
 		658925DF08B53382B452CFA1 /* PollCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PollCoordinator.swift; sourceTree = "<group>"; };
@@ -142,6 +144,7 @@
 			isa = PBXGroup;
 			children = (
 				3042A2162800ECF1BA317490 /* ProcessInfo+Testing.swift */,
+				55A0671053E35C649479C3E6 /* String+HTML.swift */,
 			);
 			path = Utilities;
 			sourceTree = "<group>";
@@ -349,6 +352,7 @@
 				94A3FF1BDCB272F1C4F111A1 /* ProcessedTodo.swift in Sources */,
 				6E4A3961984683503D3C1BB6 /* Queries.swift in Sources */,
 				C3440A31240B4563CD9DF47A /* SettingsView.swift in Sources */,
+				47A50B4F0A7756D19AE0B6B0 /* String+HTML.swift in Sources */,
 				CAA72CAE40887A9D578BE1B8 /* SystemNoteParser.swift in Sources */,
 				0D68DFE1EDE88B1C0ED0E8CC /* TanukiBellApp.swift in Sources */,
 				CC31B0BE4AAECA905FC23109 /* TrackedMergeRequest.swift in Sources */,

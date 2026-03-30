@@ -87,4 +87,13 @@ enum NotificationType: String, CaseIterable, Codable {
     var iconImage: NSImage? {
         NSImage(named: iconAssetName)
     }
+
+    /// Whether a body excerpt (comment text) adds meaningful context for this type.
+    /// For types like reviewRequested the todo body is just the MR title — don't show it.
+    var showsBodyExcerpt: Bool {
+        switch self {
+        case .comment, .commentEdited, .mentioned: return true
+        default: return false
+        }
+    }
 }

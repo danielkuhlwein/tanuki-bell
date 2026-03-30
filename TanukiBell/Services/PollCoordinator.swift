@@ -225,8 +225,11 @@ final class PollCoordinator {
                 snapshot: snapshot
             )
 
-            // Resolve project name from stored record or fall back to ID.
-            let projectName = existing?.projectName ?? "Project #\(mr.projectId)"
+            // Resolve project name: prefer stored record, then parse from webUrl,
+            // finally fall back to numeric ID if the URL can't be parsed.
+            let projectName = existing?.projectName
+                ?? NotificationClassifier.projectPath(from: mr.webUrl)
+                ?? "Project #\(mr.projectId)"
 
             for event in events {
                 let notification = classifiedNotification(
@@ -248,14 +251,11 @@ final class PollCoordinator {
                 tracked.detailedMergeStatus = currentDetail.detailedMergeStatus
                 tracked.lastSeenAt = .now
             } else {
-                // projectName falls back to "Project #id" because the MR list and detail
-                // endpoints only return projectId, not the project name. A project API call
-                // would be needed to populate the real name — tracked as a future improvement.
                 let tracked = TrackedMergeRequest(
                     mrID: mr.id,
                     iid: mr.iid,
                     projectID: mr.projectId,
-                    projectName: "Project #\(mr.projectId)",
+                    projectName: NotificationClassifier.projectPath(from: mr.webUrl) ?? "Project #\(mr.projectId)",
                     title: mr.title,
                     state: mr.state,
                     webUrl: mr.webUrl,
@@ -374,7 +374,7 @@ final class PollCoordinator {
                             threadID: "gitlab-\(snap.projectName)-!\(snap.iid)",
                             notificationID: "note-edited-\(note.id)",
                             gitlabTodoID: "",
-                            bodyExcerpt: note.body
+                            bodyExcerpt: note.body.strippingHTML
                         )
                         NotificationDispatcher.send(notification)
                         persistNotificationRecord(notification)
