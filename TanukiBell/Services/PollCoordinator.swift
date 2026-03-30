@@ -13,6 +13,10 @@ final class PollCoordinator {
     private let modelContainer: ModelContainer
     private let onUpdate: (Int, Date) -> Void
 
+    /// Cached username of the authenticated GitLab user. Fetched once on first
+    /// supplemental poll and used to filter out self-generated events (e.g. own approvals).
+    private var currentUsername: String?
+
     var isRunning: Bool { primaryTimer != nil }
 
     init(
@@ -167,6 +171,12 @@ final class PollCoordinator {
 
     /// Discover all watched MRs across 3 scopes, diff snapshots, emit notifications.
     private func pollTrackedMRs(token: String) async {
+        // Resolve current user once — used to suppress self-generated events.
+        if currentUsername == nil {
+            currentUsername = try? await gitLabService.fetchCurrentUser(token: token).username
+            print("[Supplemental] Current user: \(currentUsername ?? "unknown")")
+        }
+
         do {
             // Phase 1: Discover watched MR set across all relevant scopes.
             // TODO: If any single scope returns a 403 (e.g. reviews_for_me on older GitLab tiers),
@@ -234,6 +244,13 @@ final class PollCoordinator {
                 ?? "Project #\(mr.projectId)"
 
             for event in events {
+                // Suppress events the current user caused themselves (e.g. approving
+                // an MR they were asked to review fires an approved event for their own username).
+                if case .approved(let byUsername) = event, byUsername == currentUsername {
+                    print("[Supplemental] Skipped self-approval by \(byUsername) on !\(mr.iid)")
+                    continue
+                }
+
                 let notification = classifiedNotification(
                     for: event,
                     mr: currentDetail,

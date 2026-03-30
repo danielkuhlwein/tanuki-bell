@@ -14,7 +14,7 @@ struct NotificationDispatcher {
 
         let content = UNMutableNotificationContent()
         content.title = notification.title
-        content.subtitle = notification.projectName
+        content.subtitle = NotificationClassifier.stripOrg(notification.projectName)
         if let excerpt = notification.bodyExcerpt, !excerpt.isEmpty {
             content.body = "\(notification.mrTitle)\n\(excerpt)"
         } else {

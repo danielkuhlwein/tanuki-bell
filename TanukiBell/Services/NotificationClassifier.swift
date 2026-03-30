@@ -38,6 +38,15 @@ struct NotificationClassifier {
         )
     }
 
+    /// Strip the org/top-level group prefix from a full project path for display.
+    /// `cavnue/frontend/cav-ts-apps-tools` → `frontend/cav-ts-apps-tools`
+    /// Single-segment paths are returned unchanged.
+    static func stripOrg(_ fullPath: String) -> String {
+        let parts = fullPath.split(separator: "/")
+        guard parts.count > 1 else { return fullPath }
+        return parts.dropFirst().joined(separator: "/")
+    }
+
     /// Extract a project path from a GitLab MR web URL.
     /// `https://gitlab.com/org/group/project/-/merge_requests/1` → `org/group/project`
     /// Falls back to `nil` if the URL cannot be parsed.

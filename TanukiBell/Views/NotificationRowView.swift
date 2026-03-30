@@ -72,12 +72,8 @@ struct NotificationRowView: View {
         .onHover { isHovered = $0 }
     }
 
-    /// Strip the org/group prefix from project path.
-    /// "cavnue/frontend/cav-ts-apps-tools" → "frontend/cav-ts-apps-tools"
     private func stripOrg(_ fullPath: String) -> String {
-        let parts = fullPath.split(separator: "/")
-        guard parts.count > 1 else { return fullPath }
-        return parts.dropFirst().joined(separator: "/")
+        NotificationClassifier.stripOrg(fullPath)
     }
 
     /// Short relative time: "2m", "1h", "3d" etc.

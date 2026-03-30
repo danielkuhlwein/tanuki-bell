@@ -127,6 +127,23 @@ actor GitLabService {
         }
     }
 
+    // MARK: - Current user
+
+    func fetchCurrentUser(token: String) async throws -> RESTUser {
+        let url = baseURL.appendingPathComponent("api/v4/user")
+        var request = URLRequest(url: url)
+        request.setValue(token, forHTTPHeaderField: "PRIVATE-TOKEN")
+
+        let (data, response) = try await session.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw GitLabServiceError.invalidResponse
+        }
+        guard httpResponse.statusCode == 200 else {
+            throw GitLabServiceError.httpError(httpResponse.statusCode)
+        }
+        return try JSONDecoder().decode(RESTUser.self, from: data)
+    }
+
     // MARK: - MR list (multi-scope discovery)
 
     func fetchMergeRequests(
