@@ -225,10 +225,12 @@ final class PollCoordinator {
                 snapshot: snapshot
             )
 
-            // Resolve project name: prefer stored record, then parse from webUrl,
-            // finally fall back to numeric ID if the URL can't be parsed.
-            let projectName = existing?.projectName
-                ?? NotificationClassifier.projectPath(from: mr.webUrl)
+            // Always try to derive the real project path from the webUrl first —
+            // this is more reliable than the stored value, which may be the
+            // "Project #id" placeholder from before this fix was applied.
+            let urlDerivedPath = NotificationClassifier.projectPath(from: mr.webUrl)
+            let projectName = urlDerivedPath
+                ?? existing?.projectName
                 ?? "Project #\(mr.projectId)"
 
             for event in events {
@@ -250,6 +252,10 @@ final class PollCoordinator {
                 tracked.approvedByUsernames = currentApprovals.approvedBy.map(\.user.username)
                 tracked.detailedMergeStatus = currentDetail.detailedMergeStatus
                 tracked.lastSeenAt = .now
+                // Heal stored placeholder project names (self-corrects on next poll).
+                if let realPath = urlDerivedPath, tracked.projectName.hasPrefix("Project #") {
+                    tracked.projectName = realPath
+                }
             } else {
                 let tracked = TrackedMergeRequest(
                     mrID: mr.id,
