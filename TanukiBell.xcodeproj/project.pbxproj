@@ -24,6 +24,7 @@
 		7297933A737F93F7CFE0598E /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB726A49F5E4E6990060A5CB /* KeychainStore.swift */; };
 		790570F6788C01850004E059 /* GitLabService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56B452E78B55583DC31877ED /* GitLabService.swift */; };
 		907F5CAE2A440B56A9C7A976 /* MRSnapshotDifferTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB316F69F8AD4CA94EE84CA0 /* MRSnapshotDifferTests.swift */; };
+		91BFF94FE49D31369122AB53 /* SystemNoteParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 446E9F5E55F7ACCBC9D491C8 /* SystemNoteParserTests.swift */; };
 		94A3FF1BDCB272F1C4F111A1 /* ProcessedTodo.swift in Sources */ = {isa = PBXBuildFile; fileRef = D23002CDA2411739574565E9 /* ProcessedTodo.swift */; };
 		A00C213E0DA198DE4744ACC2 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6D0B9CB80DA2F77C7E209F2 /* AppDelegate.swift */; };
 		AC43FC4525A21F371FB15AD1 /* ConnectionSettingsTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 824013EAA1A975389DCFE420 /* ConnectionSettingsTab.swift */; };
@@ -31,6 +32,7 @@
 		BC7A7F70F8C0BA7029883259 /* NotificationType.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDABEAAB3190CCFC42D93E4E /* NotificationType.swift */; };
 		BCEC493B103B54B6AB8418B2 /* NotificationSettingsTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 691C815F1729AFCF759FAAB1 /* NotificationSettingsTab.swift */; };
 		C3440A31240B4563CD9DF47A /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EF6A3F497701B14D4CBB85E /* SettingsView.swift */; };
+		CAA72CAE40887A9D578BE1B8 /* SystemNoteParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0ACCDA4B3B3448965C3CE2CD /* SystemNoteParser.swift */; };
 		CC31B0BE4AAECA905FC23109 /* TrackedMergeRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5322B1253DA746F51862249 /* TrackedMergeRequest.swift */; };
 		CC3A9FD5B12196F50045D165 /* NotificationDispatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC19F9C5F37D4094EA333EC2 /* NotificationDispatcher.swift */; };
 		CE1E166673247353A361815C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 95EECE73FAE1467B8EB8E813 /* Assets.xcassets */; };
@@ -54,6 +56,7 @@
 /* Begin PBXFileReference section */
 		0309D3A6E00E7CD712AF9B4F /* NotificationClassifierTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationClassifierTests.swift; sourceTree = "<group>"; };
 		09B758812838EE86B0A6F544 /* NotificationRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationRecord.swift; sourceTree = "<group>"; };
+		0ACCDA4B3B3448965C3CE2CD /* SystemNoteParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemNoteParser.swift; sourceTree = "<group>"; };
 		15D3CB7E97E1B3EA3503AA08 /* PollState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PollState.swift; sourceTree = "<group>"; };
 		2808B91DF140DA8501C7A43E /* GitLabAPITypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitLabAPITypes.swift; sourceTree = "<group>"; };
 		2EF6A3F497701B14D4CBB85E /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
@@ -62,6 +65,7 @@
 		357A706A8CFB0EFC2D8D34DE /* NotificationHistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationHistoryView.swift; sourceTree = "<group>"; };
 		402FC6350632C2BF363A5890 /* MRSnapshotDiffer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MRSnapshotDiffer.swift; sourceTree = "<group>"; };
 		40EE182A8ACD551F6EF38665 /* TanukiBellApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TanukiBellApp.swift; sourceTree = "<group>"; };
+		446E9F5E55F7ACCBC9D491C8 /* SystemNoteParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemNoteParserTests.swift; sourceTree = "<group>"; };
 		455B793610CFB7B12AED646B /* NotificationPreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationPreferences.swift; sourceTree = "<group>"; };
 		56B452E78B55583DC31877ED /* GitLabService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitLabService.swift; sourceTree = "<group>"; };
 		5F5A3C27079F86F6FDDF1E46 /* Queries.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Queries.swift; sourceTree = "<group>"; };
@@ -106,6 +110,7 @@
 			children = (
 				FB316F69F8AD4CA94EE84CA0 /* MRSnapshotDifferTests.swift */,
 				0309D3A6E00E7CD712AF9B4F /* NotificationClassifierTests.swift */,
+				446E9F5E55F7ACCBC9D491C8 /* SystemNoteParserTests.swift */,
 			);
 			path = TanukiBellTests;
 			sourceTree = "<group>";
@@ -165,6 +170,7 @@
 				CC19F9C5F37D4094EA333EC2 /* NotificationDispatcher.swift */,
 				455B793610CFB7B12AED646B /* NotificationPreferences.swift */,
 				658925DF08B53382B452CFA1 /* PollCoordinator.swift */,
+				0ACCDA4B3B3448965C3CE2CD /* SystemNoteParser.swift */,
 				7D6333F38179A3AC3EAF42F5 /* UpdaterController.swift */,
 			);
 			path = Services;
@@ -310,6 +316,7 @@
 			files = (
 				907F5CAE2A440B56A9C7A976 /* MRSnapshotDifferTests.swift in Sources */,
 				55D7EE4FADFA29AF5545239E /* NotificationClassifierTests.swift in Sources */,
+				91BFF94FE49D31369122AB53 /* SystemNoteParserTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -342,6 +349,7 @@
 				94A3FF1BDCB272F1C4F111A1 /* ProcessedTodo.swift in Sources */,
 				6E4A3961984683503D3C1BB6 /* Queries.swift in Sources */,
 				C3440A31240B4563CD9DF47A /* SettingsView.swift in Sources */,
+				CAA72CAE40887A9D578BE1B8 /* SystemNoteParser.swift in Sources */,
 				0D68DFE1EDE88B1C0ED0E8CC /* TanukiBellApp.swift in Sources */,
 				CC31B0BE4AAECA905FC23109 /* TrackedMergeRequest.swift in Sources */,
 				FE489D6C736A964661A97582 /* UpdaterController.swift in Sources */,
