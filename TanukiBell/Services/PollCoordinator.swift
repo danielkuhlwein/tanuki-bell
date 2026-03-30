@@ -185,6 +185,10 @@ final class PollCoordinator {
             print("[Supplemental] Watched MRs: \(unique.count) across created/assigned/reviewing scopes")
 
             // Phase 2: Diff each MR against its stored snapshot.
+            // MRs are processed sequentially (not withTaskGroup) because diffAndNotify
+            // performs SwiftData writes per MR. Parallel writes would require separate
+            // ModelContext instances per task — add withTaskGroup only if poll latency
+            // becomes a user-visible concern.
             for mr in unique {
                 await diffAndNotify(mr: mr, token: token)
             }
@@ -244,6 +248,9 @@ final class PollCoordinator {
                 tracked.detailedMergeStatus = currentDetail.detailedMergeStatus
                 tracked.lastSeenAt = .now
             } else {
+                // projectName falls back to "Project #id" because the MR list and detail
+                // endpoints only return projectId, not the project name. A project API call
+                // would be needed to populate the real name — tracked as a future improvement.
                 let tracked = TrackedMergeRequest(
                     mrID: mr.id,
                     iid: mr.iid,
