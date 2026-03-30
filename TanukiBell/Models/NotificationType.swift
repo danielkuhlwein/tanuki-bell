@@ -13,6 +13,7 @@ enum NotificationType: String, CaseIterable, Codable {
     case closed
     case mentioned
     case pipelineFailed
+    case pipelinePassed
     case newCommitsPushed
     case prActivity
 
@@ -30,6 +31,7 @@ enum NotificationType: String, CaseIterable, Codable {
         case .closed:             return "Closed"
         case .mentioned:          return "Mentioned"
         case .pipelineFailed:     return "Pipeline Failed"
+        case .pipelinePassed:     return "Pipeline Passed"
         case .newCommitsPushed:   return "New Commits Pushed"
         case .prActivity:         return "MR Activity"
         }
@@ -45,6 +47,7 @@ enum NotificationType: String, CaseIterable, Codable {
         case .mentioned:          return 3
         case .approved:           return 3
         case .merged:             return 3
+        case .pipelinePassed:     return 3
         case .comment:            return 4
         case .closed:             return 4
         case .commentEdited:      return 5
@@ -56,7 +59,7 @@ enum NotificationType: String, CaseIterable, Codable {
 
     var defaultEnabled: Bool {
         switch self {
-        case .prActivity, .newCommitsPushed: return false
+        case .prActivity, .newCommitsPushed, .pipelinePassed: return false
         default: return true
         }
     }
@@ -75,6 +78,7 @@ enum NotificationType: String, CaseIterable, Codable {
         case .closed:             return "PR_Closed"
         case .mentioned:          return "You_Were_Mentioned"
         case .pipelineFailed:     return "PR_Closed"
+        case .pipelinePassed:     return "PR_Merged"
         case .newCommitsPushed:   return "New_Commits_Pushed"
         case .prActivity:         return "PR_Activity"
         }
