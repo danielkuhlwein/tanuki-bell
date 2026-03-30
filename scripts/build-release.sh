@@ -27,6 +27,10 @@ APP_PATH="$BUILD_DIR/$APP_NAME.app"
 DMG_PATH="build/TanukiBell-${VERSION}.dmg"
 TAG="v${VERSION}"
 
+# Sparkle tools (resolved via SPM into Xcode DerivedData)
+SPARKLE_BIN=$(find ~/Library/Developer/Xcode/DerivedData -path "*/Sparkle*/bin/generate_appcast" -type f 2>/dev/null | head -1)
+SIGN_UPDATE_BIN=$(find ~/Library/Developer/Xcode/DerivedData -path "*/Sparkle*/bin/sign_update" -type f 2>/dev/null | head -1)
+
 echo "==> Building $APP_NAME v$VERSION"
 
 # Clean build directory
@@ -84,6 +88,25 @@ fi
 
 echo "==> Created $DMG_PATH"
 
+# Generate / update appcast.xml
+if [ -n "$SPARKLE_BIN" ]; then
+    echo "==> Generating appcast.xml"
+    APPCAST_DIR="build/appcast"
+    mkdir -p "$APPCAST_DIR"
+    cp "$DMG_PATH" "$APPCAST_DIR/"
+
+    # generate_appcast signs each DMG and writes appcast.xml into the same dir
+    "$SPARKLE_BIN" "$APPCAST_DIR" \
+        --link "https://github.com/danielkuhlwein/tanuki-bell/releases" \
+        --download-url-prefix "https://github.com/danielkuhlwein/tanuki-bell/releases/download/${TAG}/"
+
+    cp "$APPCAST_DIR/appcast.xml" appcast.xml
+    echo "==> appcast.xml updated"
+else
+    echo "Warning: generate_appcast not found — skipping appcast.xml generation."
+    echo "         Build the project in Xcode first so SPM resolves Sparkle."
+fi
+
 # Publish to GitHub Releases
 if [ "$PUBLISH" = "--publish" ]; then
     if ! command -v gh &>/dev/null; then
@@ -118,6 +141,15 @@ if [ "$PUBLISH" = "--publish" ]; then
         --notes "$NOTES"
 
     echo "==> Published: $(gh release view "$TAG" --json url -q .url)"
+
+    # Commit and push updated appcast.xml so Sparkle can find it
+    if [ -f appcast.xml ]; then
+        echo "==> Committing appcast.xml"
+        git add appcast.xml
+        git commit -m "chore: update appcast.xml for v${VERSION}"
+        git push
+        echo "==> appcast.xml pushed to main"
+    fi
 else
     echo ""
     echo "Release artifacts:"
