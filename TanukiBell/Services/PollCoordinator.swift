@@ -169,8 +169,8 @@ final class PollCoordinator {
     private func pollMRStates(token: String) async {
         do {
             let since = Date.now.addingTimeInterval(-300)
-            let mergeRequests = try await gitLabService.fetchAssignedMergeRequests(
-                token: token, updatedAfter: since
+            let mergeRequests = try await gitLabService.fetchMergeRequests(
+                token: token, scope: "assigned_to_me", updatedAfter: since
             )
             print("[Supplemental] MR state: \(mergeRequests.count) MRs updated recently")
 
@@ -359,7 +359,7 @@ final class PollCoordinator {
         return (try? context.fetchCount(descriptor)) ?? 0
     }
 
-    struct MRSnapshot {
+    struct TrackedMRSnapshot {
         let mrID: Int
         let iid: Int
         let projectID: Int
@@ -369,13 +369,13 @@ final class PollCoordinator {
         let lastNoteID: Int?
     }
 
-    private func fetchTrackedMRSnapshots() -> [MRSnapshot] {
+    private func fetchTrackedMRSnapshots() -> [TrackedMRSnapshot] {
         let context = ModelContext(modelContainer)
         let descriptor = FetchDescriptor<TrackedMergeRequest>(
             sortBy: [SortDescriptor(\.lastSeenAt, order: .reverse)]
         )
         return ((try? context.fetch(descriptor)) ?? []).map { mr in
-            MRSnapshot(
+            TrackedMRSnapshot(
                 mrID: mr.mrID, iid: mr.iid, projectID: mr.projectID,
                 projectName: mr.projectName, title: mr.title,
                 webUrl: mr.webUrl, lastNoteID: mr.lastNoteID
