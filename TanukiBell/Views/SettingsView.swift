@@ -22,10 +22,14 @@ struct SettingsView: View {
                 .tabItem {
                     Label("History", systemImage: "clock.arrow.circlepath")
                 }
+
+            AboutTab()
+                .tabItem {
+                    Label("About", systemImage: "info.circle")
+                }
         }
         .frame(width: 500, height: 500)
         .onAppear {
-            // LSUIElement apps don't auto-activate — force the app to front
             NSApp.activate(ignoringOtherApps: true)
         }
     }

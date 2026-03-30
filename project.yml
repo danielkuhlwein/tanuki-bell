@@ -46,6 +46,9 @@ targets:
       path: TanukiBell/TanukiBell.entitlements
       properties:
         com.apple.security.cs.disable-library-validation: true
+    scheme:
+      testTargets:
+        - TanukiBellTests
 
   TanukiBellTests:
     type: bundle.unit-test

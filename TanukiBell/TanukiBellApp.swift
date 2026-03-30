@@ -30,10 +30,12 @@ struct TanukiBellApp: App {
         MenuBarExtra {
             MenuBarPopover()
                 .environment(appState)
-                .environmentObject(updaterController)
                 .modelContainer(modelContainer)
                 .frame(width: 360, height: 480)
                 .onAppear {
+                    // Skip heavy init when running under XCTest
+                    guard !ProcessInfo.isRunningTests else { return }
+
                     // Share model container and app state with AppDelegate
                     appDelegate.modelContainer = modelContainer
                     appDelegate.appState = appState
@@ -51,6 +53,7 @@ struct TanukiBellApp: App {
         Settings {
             SettingsView()
                 .environment(appState)
+                .environmentObject(updaterController)
                 .modelContainer(modelContainer)
         }
     }

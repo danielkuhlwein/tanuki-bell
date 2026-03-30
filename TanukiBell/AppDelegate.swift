@@ -9,6 +9,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     var appState: AppState?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        guard !ProcessInfo.isRunningTests else { return }
         UNUserNotificationCenter.current().delegate = self
         registerNotificationCategories()
         requestNotificationPermission()

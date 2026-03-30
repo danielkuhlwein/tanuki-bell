@@ -10,6 +10,7 @@
 		0C432C8F383B6AADBA0C2140 /* NotificationRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09B758812838EE86B0A6F544 /* NotificationRecord.swift */; };
 		0D68DFE1EDE88B1C0ED0E8CC /* TanukiBellApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40EE182A8ACD551F6EF38665 /* TanukiBellApp.swift */; };
 		100A76ED9DC73CCEC5001AC0 /* IdleMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC141EF579782F9958BDE875 /* IdleMonitor.swift */; };
+		193EBD7C3982224201F4D715 /* AboutTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D1C96D4EDC675A9331716D2 /* AboutTab.swift */; };
 		487F23FFC7EEC3D7BB67B42B /* PollState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15D3CB7E97E1B3EA3503AA08 /* PollState.swift */; };
 		55D7EE4FADFA29AF5545239E /* NotificationClassifierTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0309D3A6E00E7CD712AF9B4F /* NotificationClassifierTests.swift */; };
 		5653F1F940A3C5A2D94D2CC6 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EE749B7EA8C04BABA7DDE87 /* AppState.swift */; };
@@ -32,6 +33,7 @@
 		CC3A9FD5B12196F50045D165 /* NotificationDispatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC19F9C5F37D4094EA333EC2 /* NotificationDispatcher.swift */; };
 		CE1E166673247353A361815C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 95EECE73FAE1467B8EB8E813 /* Assets.xcassets */; };
 		E8A275A06EED610394DA92B7 /* NotificationHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 357A706A8CFB0EFC2D8D34DE /* NotificationHistoryView.swift */; };
+		EB35CAFB919F39C07A023D09 /* ProcessInfo+Testing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3042A2162800ECF1BA317490 /* ProcessInfo+Testing.swift */; };
 		FB079DA231119AC7ACF0AD3F /* NotificationPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = 455B793610CFB7B12AED646B /* NotificationPreferences.swift */; };
 		FE489D6C736A964661A97582 /* UpdaterController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D6333F38179A3AC3EAF42F5 /* UpdaterController.swift */; };
 		FED0F46D7E9D084C308696DA /* NotificationClassifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3488B07FC0C8C2D240C0A631 /* NotificationClassifier.swift */; };
@@ -53,6 +55,7 @@
 		15D3CB7E97E1B3EA3503AA08 /* PollState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PollState.swift; sourceTree = "<group>"; };
 		2808B91DF140DA8501C7A43E /* GitLabAPITypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitLabAPITypes.swift; sourceTree = "<group>"; };
 		2EF6A3F497701B14D4CBB85E /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		3042A2162800ECF1BA317490 /* ProcessInfo+Testing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ProcessInfo+Testing.swift"; sourceTree = "<group>"; };
 		3488B07FC0C8C2D240C0A631 /* NotificationClassifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationClassifier.swift; sourceTree = "<group>"; };
 		357A706A8CFB0EFC2D8D34DE /* NotificationHistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationHistoryView.swift; sourceTree = "<group>"; };
 		40EE182A8ACD551F6EF38665 /* TanukiBellApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TanukiBellApp.swift; sourceTree = "<group>"; };
@@ -66,6 +69,7 @@
 		7DB2C610319672A7DBC08569 /* TanukiBell.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TanukiBell.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7EE749B7EA8C04BABA7DDE87 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
 		824013EAA1A975389DCFE420 /* ConnectionSettingsTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionSettingsTab.swift; sourceTree = "<group>"; };
+		8D1C96D4EDC675A9331716D2 /* AboutTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutTab.swift; sourceTree = "<group>"; };
 		95EECE73FAE1467B8EB8E813 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		9FA0090047C4AA7F8773DFC8 /* MenuBarPopover.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarPopover.swift; sourceTree = "<group>"; };
 		B5322B1253DA746F51862249 /* TrackedMergeRequest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackedMergeRequest.swift; sourceTree = "<group>"; };
@@ -112,6 +116,7 @@
 		3D20DBB4469F609BBAD66A06 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				8D1C96D4EDC675A9331716D2 /* AboutTab.swift */,
 				824013EAA1A975389DCFE420 /* ConnectionSettingsTab.swift */,
 				C786639565ABEC34BCFE712D /* GeneralSettingsTab.swift */,
 				9FA0090047C4AA7F8773DFC8 /* MenuBarPopover.swift */,
@@ -121,6 +126,14 @@
 				2EF6A3F497701B14D4CBB85E /* SettingsView.swift */,
 			);
 			path = Views;
+			sourceTree = "<group>";
+		};
+		4B0259C8CCA02538FF57E63C /* Utilities */ = {
+			isa = PBXGroup;
+			children = (
+				3042A2162800ECF1BA317490 /* ProcessInfo+Testing.swift */,
+			);
+			path = Utilities;
 			sourceTree = "<group>";
 		};
 		54F5C2A1040F90DEC9485145 /* Models */ = {
@@ -180,6 +193,7 @@
 				54F5C2A1040F90DEC9485145 /* Models */,
 				FDC748D20B8DDADE40988AEA /* Resources */,
 				8BA9FE9A399C3CFC87DBFA96 /* Services */,
+				4B0259C8CCA02538FF57E63C /* Utilities */,
 				3D20DBB4469F609BBAD66A06 /* Views */,
 			);
 			path = TanukiBell;
@@ -296,6 +310,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				193EBD7C3982224201F4D715 /* AboutTab.swift in Sources */,
 				A00C213E0DA198DE4744ACC2 /* AppDelegate.swift in Sources */,
 				5653F1F940A3C5A2D94D2CC6 /* AppState.swift in Sources */,
 				AC43FC4525A21F371FB15AD1 /* ConnectionSettingsTab.swift in Sources */,
@@ -315,6 +330,7 @@
 				BC7A7F70F8C0BA7029883259 /* NotificationType.swift in Sources */,
 				5EC6D24B016D4227C980E499 /* PollCoordinator.swift in Sources */,
 				487F23FFC7EEC3D7BB67B42B /* PollState.swift in Sources */,
+				EB35CAFB919F39C07A023D09 /* ProcessInfo+Testing.swift in Sources */,
 				94A3FF1BDCB272F1C4F111A1 /* ProcessedTodo.swift in Sources */,
 				6E4A3961984683503D3C1BB6 /* Queries.swift in Sources */,
 				C3440A31240B4563CD9DF47A /* SettingsView.swift in Sources */,

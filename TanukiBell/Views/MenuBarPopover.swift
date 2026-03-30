@@ -4,8 +4,6 @@ import SwiftData
 struct MenuBarPopover: View {
     @Environment(AppState.self) private var appState
     @Environment(\.modelContext) private var modelContext
-    @EnvironmentObject private var updaterController: UpdaterController
-
     @Query(
         filter: #Predicate<NotificationRecord> { !$0.isRead },
         sort: \NotificationRecord.receivedAt,
@@ -66,10 +64,6 @@ struct MenuBarPopover: View {
                 .disabled(unreadNotifications.isEmpty)
 
                 Spacer()
-
-                Button("Updates") {
-                    updaterController.checkForUpdates()
-                }
 
                 SettingsLink {
                     Text("Settings...")

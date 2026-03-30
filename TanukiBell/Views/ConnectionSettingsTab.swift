@@ -95,7 +95,8 @@ struct ConnectionSettingsTab: View {
             }
             .padding(.top, 10)
         }
-        .padding()
+        .padding(.vertical)
+        .padding(.horizontal, 40)
         .onAppear {
             if let saved = KeychainStore.loadToken() {
                 token = saved
