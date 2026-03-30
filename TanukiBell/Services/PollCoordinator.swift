@@ -158,46 +158,183 @@ final class PollCoordinator {
 
         print("[Supplemental] Starting MR state + notes poll")
         Task {
-            await pollMRStates(token: token)
+            await pollTrackedMRs(token: token)
             await pollNotes(token: token)
             cleanupOldRecords()
             print("[Supplemental] Done")
         }
     }
 
-    /// Detect merged/closed MR transitions
-    private func pollMRStates(token: String) async {
+    /// Discover all watched MRs across 3 scopes, diff snapshots, emit notifications.
+    private func pollTrackedMRs(token: String) async {
         do {
-            let since = Date.now.addingTimeInterval(-300)
-            let mergeRequests = try await gitLabService.fetchMergeRequests(
-                token: token, scope: "assigned_to_me", updatedAfter: since
+            // Phase 1: Discover watched MR set across all relevant scopes.
+            // TODO: If any single scope returns a 403 (e.g. reviews_for_me on older GitLab tiers),
+            // the entire try await will throw and all discovery is skipped.
+            // Future improvement: fetch scopes independently and union the results so a partial
+            // failure only loses one scope rather than the full watched set.
+            async let authored = gitLabService.fetchMergeRequests(token: token, scope: "created_by_me")
+            async let assigned = gitLabService.fetchMergeRequests(token: token, scope: "assigned_to_me")
+            async let reviewing = gitLabService.fetchMergeRequests(token: token, scope: "reviews_for_me")
+
+            let all = try await authored + assigned + reviewing
+            // Deduplicate by MR id (same MR can appear in multiple scopes).
+            var seen = Set<Int>()
+            let unique = all.filter { seen.insert($0.id).inserted }
+
+            print("[Supplemental] Watched MRs: \(unique.count) across created/assigned/reviewing scopes")
+
+            // Phase 2: Diff each MR against its stored snapshot.
+            for mr in unique {
+                await diffAndNotify(mr: mr, token: token)
+            }
+
+        } catch {
+            print("[Supplemental] MR discovery failed: \(error)")
+        }
+    }
+
+    private func diffAndNotify(mr: RESTMergeRequest, token: String) async {
+        do {
+            async let detail = gitLabService.fetchMRDetail(token: token, projectID: mr.projectId, mrIID: mr.iid)
+            async let approvals = gitLabService.fetchMRApprovals(token: token, projectID: mr.projectId, mrIID: mr.iid)
+
+            let (currentDetail, currentApprovals) = try await (detail, approvals)
+
+            let context = ModelContext(modelContainer)
+            let mrID = mr.id
+            let descriptor = FetchDescriptor<TrackedMergeRequest>(
+                predicate: #Predicate { $0.mrID == mrID }
             )
-            print("[Supplemental] MR state: \(mergeRequests.count) MRs updated recently")
+            let existing = try context.fetch(descriptor).first
 
-            for mr in mergeRequests {
-                let transition = detectMRTransition(mr)
-                guard let transition else { continue }
-                print("[Supplemental] MR state transition: !\(mr.iid) → \(transition.rawValue)")
+            // Build snapshot from stored record (or empty snapshot for first encounter).
+            let snapshot = MRSnapshot(
+                sha: existing?.sha,
+                headPipelineStatus: existing?.headPipelineStatus,
+                approvedByUsernames: existing?.approvedByUsernames ?? []
+            )
 
-                let notification = ClassifiedNotification(
-                    type: transition,
-                    title: "\(transition.displayTitle): \(mr.title)",
-                    projectName: "Project #\(mr.projectId)",
-                    mrTitle: mr.title,
-                    mrIID: mr.iid,
-                    sourceURL: URL(string: mr.webUrl),
-                    senderName: NotificationClassifier.abbreviateName(mr.author?.name ?? "Someone"),
-                    senderAvatarURL: nil,
-                    threadID: "gitlab-\(mr.projectId)-!\(mr.iid)",
-                    notificationID: "mr-state-\(mr.id)-\(mr.state)",
-                    gitlabTodoID: "",
-                    bodyExcerpt: nil
+            let events = MRSnapshotDiffer.diff(
+                current: currentDetail,
+                approvals: currentApprovals,
+                snapshot: snapshot
+            )
+
+            // Resolve project name from stored record or fall back to ID.
+            let projectName = existing?.projectName ?? "Project #\(mr.projectId)"
+
+            for event in events {
+                let notification = classifiedNotification(
+                    for: event,
+                    mr: currentDetail,
+                    projectName: projectName
                 )
+                print("[Supplemental] Diff event: \(event) on !\(mr.iid)")
                 NotificationDispatcher.send(notification)
                 persistNotificationRecord(notification)
             }
+
+            // Upsert snapshot.
+            if let tracked = existing {
+                tracked.state = currentDetail.state
+                tracked.sha = currentDetail.sha
+                tracked.headPipelineStatus = currentDetail.headPipeline?.status
+                tracked.approvedByUsernames = currentApprovals.approvedBy.map(\.user.username)
+                tracked.detailedMergeStatus = currentDetail.detailedMergeStatus
+                tracked.lastSeenAt = .now
+            } else {
+                let tracked = TrackedMergeRequest(
+                    mrID: mr.id,
+                    iid: mr.iid,
+                    projectID: mr.projectId,
+                    projectName: "Project #\(mr.projectId)",
+                    title: mr.title,
+                    state: mr.state,
+                    webUrl: mr.webUrl,
+                    authorName: mr.author?.name ?? "Unknown"
+                )
+                tracked.sha = currentDetail.sha
+                tracked.headPipelineStatus = currentDetail.headPipeline?.status
+                tracked.approvedByUsernames = currentApprovals.approvedBy.map(\.user.username)
+                tracked.detailedMergeStatus = currentDetail.detailedMergeStatus
+                context.insert(tracked)
+            }
+            try context.save()
+
         } catch {
-            print("[PollCoordinator] MR state poll failed: \(error)")
+            print("[Supplemental] Diff failed for MR !\(mr.iid): \(error)")
+        }
+    }
+
+    private func classifiedNotification(
+        for event: MRDiffEvent,
+        mr: RESTMergeRequest,
+        projectName: String
+    ) -> ClassifiedNotification {
+        let threadID = "gitlab-\(projectName)-!\(mr.iid)"
+
+        switch event {
+        case .newCommitsPushed:
+            return ClassifiedNotification(
+                type: .newCommitsPushed,
+                title: "New Commits Pushed",
+                projectName: projectName,
+                mrTitle: mr.title,
+                mrIID: mr.iid,
+                sourceURL: URL(string: mr.webUrl),
+                senderName: mr.author?.name ?? "Someone",
+                senderAvatarURL: nil,
+                threadID: threadID,
+                notificationID: "commits-\(mr.id)-\(mr.sha ?? "")",
+                gitlabTodoID: "",
+                bodyExcerpt: nil
+            )
+        case .pipelineFailed:
+            return ClassifiedNotification(
+                type: .pipelineFailed,
+                title: "Pipeline Failed",
+                projectName: projectName,
+                mrTitle: mr.title,
+                mrIID: mr.iid,
+                sourceURL: URL(string: mr.webUrl),
+                senderName: mr.author?.name ?? "Someone",
+                senderAvatarURL: nil,
+                threadID: threadID,
+                notificationID: "pipeline-failed-\(mr.id)",
+                gitlabTodoID: "",
+                bodyExcerpt: nil
+            )
+        case .pipelinePassed:
+            return ClassifiedNotification(
+                type: .pipelinePassed,
+                title: "Pipeline Passed",
+                projectName: projectName,
+                mrTitle: mr.title,
+                mrIID: mr.iid,
+                sourceURL: URL(string: mr.webUrl),
+                senderName: mr.author?.name ?? "Someone",
+                senderAvatarURL: nil,
+                threadID: threadID,
+                notificationID: "pipeline-passed-\(mr.id)",
+                gitlabTodoID: "",
+                bodyExcerpt: nil
+            )
+        case .approved(let byUsername):
+            return ClassifiedNotification(
+                type: .approved,
+                title: "Approved by \(NotificationClassifier.abbreviateName(byUsername))",
+                projectName: projectName,
+                mrTitle: mr.title,
+                mrIID: mr.iid,
+                sourceURL: URL(string: mr.webUrl),
+                senderName: byUsername,
+                senderAvatarURL: nil,
+                threadID: threadID,
+                notificationID: "approved-\(mr.id)-\(byUsername)",
+                gitlabTodoID: "",
+                bodyExcerpt: nil
+            )
         }
     }
 
@@ -242,55 +379,6 @@ final class PollCoordinator {
             }
         } catch {
             print("[PollCoordinator] Notes poll failed: \(error)")
-        }
-    }
-
-    // MARK: - MR state transition detection
-
-    private func detectMRTransition(_ mr: RESTMergeRequest) -> NotificationType? {
-        let context = ModelContext(modelContainer)
-        let mrID = mr.id
-        let descriptor = FetchDescriptor<TrackedMergeRequest>(
-            predicate: #Predicate { $0.mrID == mrID }
-        )
-
-        do {
-            let existing = try context.fetch(descriptor).first
-
-            if let tracked = existing {
-                let oldState = tracked.state
-                let newState = mr.state
-
-                tracked.state = newState
-                tracked.lastSeenAt = .now
-                try context.save()
-
-                if oldState != newState {
-                    switch newState {
-                    case "merged": return .merged
-                    case "closed": return .closed
-                    default: return nil
-                    }
-                }
-                return nil
-            } else {
-                let tracked = TrackedMergeRequest(
-                    mrID: mr.id,
-                    iid: mr.iid,
-                    projectID: mr.projectId,
-                    projectName: "Project #\(mr.projectId)",
-                    title: mr.title,
-                    state: mr.state,
-                    webUrl: mr.webUrl,
-                    authorName: mr.author?.name ?? "Unknown"
-                )
-                context.insert(tracked)
-                try context.save()
-                return nil
-            }
-        } catch {
-            print("[PollCoordinator] MR transition detection failed: \(error)")
-            return nil
         }
     }
 
