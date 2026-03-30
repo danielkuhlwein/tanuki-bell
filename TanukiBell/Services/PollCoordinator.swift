@@ -356,6 +356,7 @@ final class PollCoordinator {
                     token: token, projectID: snap.projectID, mrIID: snap.iid
                 )
 
+                // Process non-system notes (new comments, edited comments).
                 for note in notes where !note.system {
                     if let lastID = snap.lastNoteID, note.id <= lastID { continue }
 
@@ -378,6 +379,32 @@ final class PollCoordinator {
                         NotificationDispatcher.send(notification)
                         persistNotificationRecord(notification)
                     }
+                }
+
+                // Process system notes for changes-requested events.
+                let changesRequestedAuthors = SystemNoteParser.changesRequestedAuthors(
+                    in: notes,
+                    after: snap.lastNoteID
+                )
+                for authorName in changesRequestedAuthors {
+                    let shortName = NotificationClassifier.abbreviateName(authorName)
+                    let notification = ClassifiedNotification(
+                        type: .changesRequested,
+                        title: "Changes Requested by \(shortName)",
+                        projectName: snap.projectName,
+                        mrTitle: snap.title,
+                        mrIID: snap.iid,
+                        sourceURL: URL(string: snap.webUrl),
+                        senderName: authorName,
+                        senderAvatarURL: nil,
+                        threadID: "gitlab-\(snap.projectName)-!\(snap.iid)",
+                        notificationID: "changes-requested-\(snap.mrID)-\(authorName)",
+                        gitlabTodoID: "",
+                        bodyExcerpt: nil
+                    )
+                    print("[Supplemental] Changes requested by \(shortName) on !\(snap.iid)")
+                    NotificationDispatcher.send(notification)
+                    persistNotificationRecord(notification)
                 }
 
                 if let latestID = notes.first?.id {
