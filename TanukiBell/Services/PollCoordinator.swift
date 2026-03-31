@@ -203,6 +203,12 @@ final class PollCoordinator {
                 await diffAndNotify(mr: mr, token: token)
             }
 
+            // Phase 3: Detect MRs that disappeared from the open list (merged/closed).
+            // Any tracked MR we previously saw as "opened" that is no longer in the
+            // fetched set may have been merged or closed since the last poll.
+            let openMRIDs = Set(unique.map(\.id))
+            await detectDisappearedMRs(openMRIDs: openMRIDs, token: token)
+
         } catch {
             print("[Supplemental] MR discovery failed: \(error)")
         }
@@ -251,6 +257,15 @@ final class PollCoordinator {
                     continue
                 }
 
+                // Pipeline events should only fire for MRs the current user authored —
+                // otherwise we'd notify for pipeline failures on every MR we review.
+                if event == .pipelineFailed || event == .pipelinePassed {
+                    guard currentDetail.author?.username == currentUsername else {
+                        print("[Supplemental] Skipped pipeline event (not author) on !\(mr.iid)")
+                        continue
+                    }
+                }
+
                 let notification = classifiedNotification(
                     for: event,
                     mr: currentDetail,
@@ -297,6 +312,56 @@ final class PollCoordinator {
         }
     }
 
+    /// Check tracked "opened" MRs that are no longer in the fetched open set.
+    /// Fetches each one to confirm its current state, then fires merged/closed notifications.
+    private func detectDisappearedMRs(openMRIDs: Set<Int>, token: String) async {
+        let context = ModelContext(modelContainer)
+        let descriptor = FetchDescriptor<TrackedMergeRequest>(
+            predicate: #Predicate { $0.state == "opened" }
+        )
+        guard let tracked = try? context.fetch(descriptor) else { return }
+
+        let disappeared = tracked.filter { !openMRIDs.contains($0.mrID) }
+        guard !disappeared.isEmpty else { return }
+
+        print("[Supplemental] Checking \(disappeared.count) disappeared MR(s) for merged/closed state")
+
+        for mr in disappeared {
+            guard let detail = try? await gitLabService.fetchMRDetail(
+                token: token, projectID: mr.projectID, mrIID: mr.iid
+            ) else { continue }
+
+            guard detail.state == "merged" || detail.state == "closed" else {
+                // Still open (e.g. temporarily filtered by scope) — leave state unchanged.
+                continue
+            }
+
+            let notifType: NotificationType = detail.state == "merged" ? .merged : .closed
+            let projectName = NotificationClassifier.projectPath(from: mr.webUrl) ?? mr.projectName
+            let notification = ClassifiedNotification(
+                type: notifType,
+                title: notifType == .merged ? "MR Merged" : "MR Closed",
+                projectName: projectName,
+                mrTitle: mr.title,
+                mrIID: mr.iid,
+                sourceURL: URL(string: mr.webUrl),
+                senderName: mr.authorName,
+                senderAvatarURL: nil,
+                threadID: "gitlab-\(projectName)-!\(mr.iid)",
+                notificationID: "state-\(mr.mrID)-\(detail.state)",
+                gitlabTodoID: "",
+                bodyExcerpt: nil
+            )
+            print("[Supplemental] MR !\(mr.iid) transitioned to \(detail.state)")
+            NotificationDispatcher.send(notification)
+            persistNotificationRecord(notification)
+
+            // Update stored state to prevent re-firing on subsequent polls.
+            mr.state = detail.state
+            try? context.save()
+        }
+    }
+
     private func classifiedNotification(
         for event: MRDiffEvent,
         mr: RESTMergeRequest,
@@ -306,9 +371,10 @@ final class PollCoordinator {
 
         switch event {
         case .newCommitsPushed:
+            let pusherName = NotificationClassifier.abbreviateName(mr.author?.name ?? "Someone")
             return ClassifiedNotification(
                 type: .newCommitsPushed,
-                title: "New Commits Pushed",
+                title: "New Commits by \(pusherName)",
                 projectName: projectName,
                 mrTitle: mr.title,
                 mrIID: mr.iid,
