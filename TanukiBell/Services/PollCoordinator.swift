@@ -475,7 +475,7 @@ final class PollCoordinator {
     /// Detect edited comments on tracked MRs
     private func pollNotes(token: String) async {
         do {
-            let snapshots = fetchTrackedMRSnapshots()
+            let snapshots = fetchNotesPollSnapshots()
             print("[Supplemental] Notes: checking \(snapshots.count) tracked MRs")
 
             for snap in snapshots {
@@ -621,7 +621,7 @@ final class PollCoordinator {
         return (try? context.fetchCount(descriptor)) ?? 0
     }
 
-    struct TrackedMRSnapshot {
+    struct NotesPollSnapshot {
         let mrID: Int
         let iid: Int
         let projectID: Int
@@ -631,13 +631,13 @@ final class PollCoordinator {
         let lastNoteID: Int?
     }
 
-    private func fetchTrackedMRSnapshots() -> [TrackedMRSnapshot] {
+    private func fetchNotesPollSnapshots() -> [NotesPollSnapshot] {
         let context = ModelContext(modelContainer)
         let descriptor = FetchDescriptor<TrackedMergeRequest>(
             sortBy: [SortDescriptor(\.lastSeenAt, order: .reverse)]
         )
         return ((try? context.fetch(descriptor)) ?? []).map { mr in
-            TrackedMRSnapshot(
+            NotesPollSnapshot(
                 mrID: mr.mrID, iid: mr.iid, projectID: mr.projectID,
                 projectName: mr.projectName, title: mr.title,
                 webUrl: mr.webUrl, lastNoteID: mr.lastNoteID

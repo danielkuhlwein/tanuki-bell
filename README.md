@@ -168,6 +168,13 @@ TanukiBell/
 
 </details>
 
+## Known Issues
+
+| Issue | Detail |
+|-------|--------|
+| [New Commits Pushed shows MR author, not actual pusher](https://github.com/danielkuhlwein/tanuki-bell/issues/1) | The GitLab REST MR detail endpoint doesn't expose who last pushed. A separate commit API call per detected SHA change would be needed to surface the real pusher. |
+| [HTML numeric entities appear raw in notification bodies](https://github.com/danielkuhlwein/tanuki-bell/issues/2) | Comment excerpts containing curly quotes (`&#8220;`), em-dashes (`&#8212;`), etc. render as literal entity strings rather than the actual characters. |
+
 ## Licence
 
 MIT — do whatever you want with it.
