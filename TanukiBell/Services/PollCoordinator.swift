@@ -114,15 +114,16 @@ final class PollCoordinator {
                 print("[Poll] Fetched \(total) todos, \(newTodos.count) new")
 
                 let cutoff = Date.now.addingTimeInterval(Self.cutoff24h)
+                var anyWithin24h = false
                 for todo in newTodos {
                     let todoDate = Self.parseDate(todo.createdAt) ?? .now
 
                     guard todoDate >= cutoff else {
                         // Older than 24h — mark processed so it's not re-checked, but don't notify.
-                        print("[Poll]   Skipped (older than 24h): \(todo.id)")
                         markProcessed(todoID: todo.id)
                         continue
                     }
+                    anyWithin24h = true
 
                     guard let classified = NotificationClassifier.classify(todo: todo) else {
                         print("[Poll]   Skipped (non-MR target): \(todo.id)")
@@ -138,7 +139,9 @@ final class PollCoordinator {
                 onUpdate(unreadCount, .now)
                 print("[Poll] Unread count: \(unreadCount)")
 
-                if connection.pageInfo.hasNextPage, let cursor = connection.pageInfo.endCursor {
+                // Todos are returned newest-first. If nothing on this page was within 24h,
+                // subsequent pages will be even older — stop paginating.
+                if anyWithin24h, connection.pageInfo.hasNextPage, let cursor = connection.pageInfo.endCursor {
                     print("[Poll] Fetching next page...")
                     await pollNextPage(token: token, cursor: cursor)
                 }
@@ -158,6 +161,7 @@ final class PollCoordinator {
             let connection = try await gitLabService.fetchPendingTodos(token: token, after: cursor)
             let newTodos = filterNewTodos(connection.nodes)
             let cutoff = Date.now.addingTimeInterval(Self.cutoff24h)
+            var anyWithin24h = false
 
             for todo in newTodos {
                 let todoDate = Self.parseDate(todo.createdAt) ?? .now
@@ -165,6 +169,7 @@ final class PollCoordinator {
                     markProcessed(todoID: todo.id)
                     continue
                 }
+                anyWithin24h = true
                 guard let classified = NotificationClassifier.classify(todo: todo) else {
                     markProcessed(todoID: todo.id)
                     continue
@@ -173,7 +178,7 @@ final class PollCoordinator {
                 persist(classified: classified, todoID: todo.id, date: todoDate)
             }
 
-            if connection.pageInfo.hasNextPage, let next = connection.pageInfo.endCursor {
+            if anyWithin24h, connection.pageInfo.hasNextPage, let next = connection.pageInfo.endCursor {
                 await pollNextPage(token: token, cursor: next)
             }
         } catch {
