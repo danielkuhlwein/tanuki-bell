@@ -22,7 +22,16 @@ struct TanukiBellApp: App {
         do {
             return try ModelContainer(for: schema, configurations: [config])
         } catch {
-            fatalError("Failed to create ModelContainer: \(error)")
+            // Schema migration failed (e.g. new fields added to a model).
+            // All local data is a cache of GitLab state and will be re-fetched,
+            // so wiping the store is safe.
+            print("[App] ModelContainer migration failed, wiping store and retrying: \(error)")
+            try? FileManager.default.removeItem(at: config.url)
+            do {
+                return try ModelContainer(for: schema, configurations: [config])
+            } catch {
+                fatalError("Failed to create ModelContainer even after store reset: \(error)")
+            }
         }
     }()
 
