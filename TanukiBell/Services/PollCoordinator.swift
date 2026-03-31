@@ -87,6 +87,16 @@ final class PollCoordinator {
         supplementalTimer = s
     }
 
+    // MARK: - Helpers
+
+    private static let iso8601Parser: ISO8601DateFormatter = ISO8601DateFormatter()
+    private static let cutoff24h: TimeInterval = -24 * 60 * 60
+
+    /// Parse a GitLab ISO8601 timestamp string (e.g. "2026-03-28T10:00:00Z") to a Date.
+    private static func parseDate(_ string: String) -> Date? {
+        iso8601Parser.date(from: string)
+    }
+
     // MARK: - Primary poll (todos)
 
     private func pollTodos() {
@@ -103,7 +113,17 @@ final class PollCoordinator {
 
                 print("[Poll] Fetched \(total) todos, \(newTodos.count) new")
 
+                let cutoff = Date.now.addingTimeInterval(Self.cutoff24h)
                 for todo in newTodos {
+                    let todoDate = Self.parseDate(todo.createdAt) ?? .now
+
+                    guard todoDate >= cutoff else {
+                        // Older than 24h — mark processed so it's not re-checked, but don't notify.
+                        print("[Poll]   Skipped (older than 24h): \(todo.id)")
+                        markProcessed(todoID: todo.id)
+                        continue
+                    }
+
                     guard let classified = NotificationClassifier.classify(todo: todo) else {
                         print("[Poll]   Skipped (non-MR target): \(todo.id)")
                         markProcessed(todoID: todo.id)
@@ -111,7 +131,7 @@ final class PollCoordinator {
                     }
                     print("[Poll]   \(classified.type.rawValue): \"\(classified.title)\" — \(classified.projectName) !\(classified.mrIID ?? 0)")
                     NotificationDispatcher.send(classified)
-                    persist(classified: classified, todoID: todo.id)
+                    persist(classified: classified, todoID: todo.id, date: todoDate)
                 }
 
                 let unreadCount = fetchUnreadCount()
@@ -137,14 +157,20 @@ final class PollCoordinator {
         do {
             let connection = try await gitLabService.fetchPendingTodos(token: token, after: cursor)
             let newTodos = filterNewTodos(connection.nodes)
+            let cutoff = Date.now.addingTimeInterval(Self.cutoff24h)
 
             for todo in newTodos {
+                let todoDate = Self.parseDate(todo.createdAt) ?? .now
+                guard todoDate >= cutoff else {
+                    markProcessed(todoID: todo.id)
+                    continue
+                }
                 guard let classified = NotificationClassifier.classify(todo: todo) else {
                     markProcessed(todoID: todo.id)
                     continue
                 }
                 NotificationDispatcher.send(classified)
-                persist(classified: classified, todoID: todo.id)
+                persist(classified: classified, todoID: todo.id, date: todoDate)
             }
 
             if connection.pageInfo.hasNextPage, let next = connection.pageInfo.endCursor {
@@ -445,9 +471,12 @@ final class PollCoordinator {
                     token: token, projectID: snap.projectID, mrIID: snap.iid
                 )
 
-                // Process non-system notes (new comments, edited comments).
+                let noteCutoff = Date.now.addingTimeInterval(Self.cutoff24h)
+
+                // Process non-system notes (edited comments) newer than watermark and within 24h.
                 for note in notes where !note.system {
                     if let lastID = snap.lastNoteID, note.id <= lastID { continue }
+                    guard note.createdAt >= noteCutoff else { continue }
 
                     if note.isEdited {
                         let shortName = NotificationClassifier.abbreviateName(note.author.name)
@@ -466,16 +495,22 @@ final class PollCoordinator {
                             bodyExcerpt: note.body.strippingHTML
                         )
                         NotificationDispatcher.send(notification)
-                        persistNotificationRecord(notification)
+                        persistNotificationRecord(notification, date: note.updatedAt)
                     }
                 }
 
-                // Process system notes for changes-requested events.
+                // Process system notes for changes-requested events (within 24h only).
+                let recentNotes = notes.filter { $0.createdAt >= noteCutoff }
                 let changesRequestedAuthors = SystemNoteParser.changesRequestedAuthors(
-                    in: notes,
+                    in: recentNotes,
                     after: snap.lastNoteID
                 )
                 for authorName in changesRequestedAuthors {
+                    // Find the matching system note to get its actual timestamp.
+                    let noteDate = recentNotes.first(where: {
+                        $0.system && $0.author.name == authorName
+                            && $0.body.lowercased().contains(SystemNoteParser.changesRequestedPattern)
+                    })?.createdAt ?? .now
                     let shortName = NotificationClassifier.abbreviateName(authorName)
                     let notification = ClassifiedNotification(
                         type: .changesRequested,
@@ -493,7 +528,7 @@ final class PollCoordinator {
                     )
                     print("[Supplemental] Changes requested by \(shortName) on !\(snap.iid)")
                     NotificationDispatcher.send(notification)
-                    persistNotificationRecord(notification)
+                    persistNotificationRecord(notification, date: noteDate)
                 }
 
                 if let latestID = notes.first?.id {
@@ -526,7 +561,7 @@ final class PollCoordinator {
         try? context.save()
     }
 
-    private func persist(classified: ClassifiedNotification, todoID: String) {
+    private func persist(classified: ClassifiedNotification, todoID: String, date: Date = .now) {
         let context = ModelContext(modelContainer)
         context.insert(ProcessedTodo(gitlabTodoID: todoID))
 
@@ -539,13 +574,14 @@ final class PollCoordinator {
             sourceURL: classified.sourceURL?.absoluteString,
             senderName: classified.senderName,
             senderAvatarURL: classified.senderAvatarURL?.absoluteString,
-            bodyExcerpt: classified.bodyExcerpt
+            bodyExcerpt: classified.bodyExcerpt,
+            receivedAt: date
         )
         context.insert(record)
         try? context.save()
     }
 
-    private func persistNotificationRecord(_ notification: ClassifiedNotification) {
+    private func persistNotificationRecord(_ notification: ClassifiedNotification, date: Date = .now) {
         let context = ModelContext(modelContainer)
         let record = NotificationRecord(
             notificationType: notification.type.rawValue,
@@ -556,7 +592,8 @@ final class PollCoordinator {
             sourceURL: notification.sourceURL?.absoluteString,
             senderName: notification.senderName,
             senderAvatarURL: notification.senderAvatarURL?.absoluteString,
-            bodyExcerpt: notification.bodyExcerpt
+            bodyExcerpt: notification.bodyExcerpt,
+            receivedAt: date
         )
         context.insert(record)
         try? context.save()
