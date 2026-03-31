@@ -200,6 +200,17 @@ final class PollCoordinator {
         }
     }
 
+    /// Fetch one MR scope, swallowing errors so a single-scope failure (e.g. 403 on
+    /// GitLab Free for `reviews_for_me`) doesn't suppress the other scopes.
+    private func fetchMRScope(token: String, scope: String) async -> [RESTMergeRequest] {
+        do {
+            return try await gitLabService.fetchMergeRequests(token: token, scope: scope)
+        } catch {
+            print("[Supplemental] Scope '\(scope)' failed: \(error)")
+            return []
+        }
+    }
+
     /// Discover all watched MRs across 3 scopes, diff snapshots, emit notifications.
     private func pollTrackedMRs(token: String) async {
         // Resolve current user once — used to suppress self-generated events.
@@ -208,41 +219,34 @@ final class PollCoordinator {
             print("[Supplemental] Current user: \(currentUsername ?? "unknown")")
         }
 
-        do {
-            // Phase 1: Discover watched MR set across all relevant scopes.
-            // TODO: If any single scope returns a 403 (e.g. reviews_for_me on older GitLab tiers),
-            // the entire try await will throw and all discovery is skipped.
-            // Future improvement: fetch scopes independently and union the results so a partial
-            // failure only loses one scope rather than the full watched set.
-            async let authored = gitLabService.fetchMergeRequests(token: token, scope: "created_by_me")
-            async let assigned = gitLabService.fetchMergeRequests(token: token, scope: "assigned_to_me")
-            async let reviewing = gitLabService.fetchMergeRequests(token: token, scope: "reviews_for_me")
+        // Phase 1: Discover watched MR set across all relevant scopes.
+        // Each scope is fetched independently so a partial failure (e.g. reviews_for_me
+        // returning 403 on GitLab Free tier) only loses that scope rather than all discovery.
+        async let authored = fetchMRScope(token: token, scope: "created_by_me")
+        async let assigned = fetchMRScope(token: token, scope: "assigned_to_me")
+        async let reviewing = fetchMRScope(token: token, scope: "reviews_for_me")
 
-            let all = try await authored + assigned + reviewing
-            // Deduplicate by MR id (same MR can appear in multiple scopes).
-            var seen = Set<Int>()
-            let unique = all.filter { seen.insert($0.id).inserted }
+        let all = await authored + assigned + reviewing
+        // Deduplicate by MR id (same MR can appear in multiple scopes).
+        var seen = Set<Int>()
+        let unique = all.filter { seen.insert($0.id).inserted }
 
-            print("[Supplemental] Watched MRs: \(unique.count) across created/assigned/reviewing scopes")
+        print("[Supplemental] Watched MRs: \(unique.count) across created/assigned/reviewing scopes")
 
-            // Phase 2: Diff each MR against its stored snapshot.
-            // MRs are processed sequentially (not withTaskGroup) because diffAndNotify
-            // performs SwiftData writes per MR. Parallel writes would require separate
-            // ModelContext instances per task — add withTaskGroup only if poll latency
-            // becomes a user-visible concern.
-            for mr in unique {
-                await diffAndNotify(mr: mr, token: token)
-            }
-
-            // Phase 3: Detect MRs that disappeared from the open list (merged/closed).
-            // Any tracked MR we previously saw as "opened" that is no longer in the
-            // fetched set may have been merged or closed since the last poll.
-            let openMRIDs = Set(unique.map(\.id))
-            await detectDisappearedMRs(openMRIDs: openMRIDs, token: token)
-
-        } catch {
-            print("[Supplemental] MR discovery failed: \(error)")
+        // Phase 2: Diff each MR against its stored snapshot.
+        // MRs are processed sequentially (not withTaskGroup) because diffAndNotify
+        // performs SwiftData writes per MR. Parallel writes would require separate
+        // ModelContext instances per task — add withTaskGroup only if poll latency
+        // becomes a user-visible concern.
+        for mr in unique {
+            await diffAndNotify(mr: mr, token: token)
         }
+
+        // Phase 3: Detect MRs that disappeared from the open list (merged/closed).
+        // Any tracked MR we previously saw as "opened" that is no longer in the
+        // fetched set may have been merged or closed since the last poll.
+        let openMRIDs = Set(unique.map(\.id))
+        await detectDisappearedMRs(openMRIDs: openMRIDs, token: token)
     }
 
     private func diffAndNotify(mr: RESTMergeRequest, token: String) async {
@@ -363,7 +367,10 @@ final class PollCoordinator {
             ) else { continue }
 
             guard detail.state == "merged" || detail.state == "closed" else {
-                // Still open (e.g. temporarily filtered by scope) — leave state unchanged.
+                // Still open (e.g. temporarily filtered by scope) — refresh lastSeenAt
+                // so the 7-day TTL cleanup doesn't delete it prematurely.
+                mr.lastSeenAt = .now
+                try? context.save()
                 continue
             }
 
@@ -428,7 +435,7 @@ final class PollCoordinator {
                 senderName: mr.author?.name ?? "Someone",
                 senderAvatarURL: nil,
                 threadID: threadID,
-                notificationID: "pipeline-failed-\(mr.id)",
+                notificationID: "pipeline-failed-\(mr.id)-\(mr.sha ?? "unknown")",
                 gitlabTodoID: "",
                 bodyExcerpt: nil
             )
@@ -443,7 +450,7 @@ final class PollCoordinator {
                 senderName: mr.author?.name ?? "Someone",
                 senderAvatarURL: nil,
                 threadID: threadID,
-                notificationID: "pipeline-passed-\(mr.id)",
+                notificationID: "pipeline-passed-\(mr.id)-\(mr.sha ?? "unknown")",
                 gitlabTodoID: "",
                 bodyExcerpt: nil
             )
@@ -511,11 +518,13 @@ final class PollCoordinator {
                     after: snap.lastNoteID
                 )
                 for authorName in changesRequestedAuthors {
-                    // Find the matching system note to get its actual timestamp.
-                    let noteDate = recentNotes.first(where: {
+                    // Find the matching system note to get its timestamp and stable ID.
+                    let matchingNote = recentNotes.first(where: {
                         $0.system && $0.author.name == authorName
                             && $0.body.lowercased().contains(SystemNoteParser.changesRequestedPattern)
-                    })?.createdAt ?? .now
+                    })
+                    let noteDate = matchingNote?.createdAt ?? .now
+                    let noteID = matchingNote?.id ?? 0
                     let shortName = NotificationClassifier.abbreviateName(authorName)
                     let notification = ClassifiedNotification(
                         type: .changesRequested,
@@ -527,7 +536,7 @@ final class PollCoordinator {
                         senderName: authorName,
                         senderAvatarURL: nil,
                         threadID: "gitlab-\(snap.projectName)-!\(snap.iid)",
-                        notificationID: "changes-requested-\(snap.mrID)-\(authorName)",
+                        notificationID: "changes-requested-\(snap.mrID)-\(noteID)",
                         gitlabTodoID: "",
                         bodyExcerpt: nil
                     )

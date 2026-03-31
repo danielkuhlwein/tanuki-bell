@@ -36,7 +36,7 @@ struct NotificationRowView: View {
 
                 // MR reference: "!1003 - frontend/cav-ts-apps-tools"
                 if let iid = record.mrIID {
-                    Text("!\(iid, format: .number.grouping(.never)) \u{2014} \(stripOrg(record.projectName))")
+                    Text("!\(iid, format: .number.grouping(.never)) \u{2014} \(NotificationClassifier.stripOrg(record.projectName))")
                         .font(.system(size: 11))
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
@@ -70,10 +70,6 @@ struct NotificationRowView: View {
         )
         .opacity(record.isRead ? 0.7 : 1.0)
         .onHover { isHovered = $0 }
-    }
-
-    private func stripOrg(_ fullPath: String) -> String {
-        NotificationClassifier.stripOrg(fullPath)
     }
 
     /// Short relative time: "2m", "1h", "3d" etc.
