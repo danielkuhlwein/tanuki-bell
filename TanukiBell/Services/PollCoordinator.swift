@@ -131,8 +131,10 @@ final class PollCoordinator {
                         continue
                     }
                     print("[Poll]   \(classified.type.rawValue): \"\(classified.title)\" — \(classified.projectName) !\(classified.mrIID ?? 0)")
-                    NotificationDispatcher.send(classified)
-                    persist(classified: classified, todoID: todo.id, date: todoDate)
+                    markProcessed(todoID: todo.id)
+                    if NotificationDispatcher.send(classified) {
+                        persistNotificationRecord(classified, date: todoDate)
+                    }
                 }
 
                 let unreadCount = fetchUnreadCount()
@@ -174,8 +176,10 @@ final class PollCoordinator {
                     markProcessed(todoID: todo.id)
                     continue
                 }
-                NotificationDispatcher.send(classified)
-                persist(classified: classified, todoID: todo.id, date: todoDate)
+                markProcessed(todoID: todo.id)
+                if NotificationDispatcher.send(classified) {
+                    persistNotificationRecord(classified, date: todoDate)
+                }
             }
 
             if anyWithin24h, connection.pageInfo.hasNextPage, let next = connection.pageInfo.endCursor {
@@ -307,8 +311,9 @@ final class PollCoordinator {
                     projectName: projectName
                 )
                 print("[Supplemental] Diff event: \(event) on !\(mr.iid)")
-                NotificationDispatcher.send(notification)
-                persistNotificationRecord(notification)
+                if NotificationDispatcher.send(notification) {
+                    persistNotificationRecord(notification)
+                }
             }
 
             // Upsert snapshot.
@@ -391,8 +396,9 @@ final class PollCoordinator {
                 bodyExcerpt: nil
             )
             print("[Supplemental] MR !\(mr.iid) transitioned to \(detail.state)")
-            NotificationDispatcher.send(notification)
-            persistNotificationRecord(notification)
+            if NotificationDispatcher.send(notification) {
+                persistNotificationRecord(notification)
+            }
 
             // Update stored state to prevent re-firing on subsequent polls.
             mr.state = detail.state
@@ -506,8 +512,9 @@ final class PollCoordinator {
                             gitlabTodoID: "",
                             bodyExcerpt: note.body.strippingHTML
                         )
-                        NotificationDispatcher.send(notification)
-                        persistNotificationRecord(notification, date: note.updatedAt)
+                        if NotificationDispatcher.send(notification) {
+                            persistNotificationRecord(notification, date: note.updatedAt)
+                        }
                     }
                 }
 
@@ -541,8 +548,9 @@ final class PollCoordinator {
                         bodyExcerpt: nil
                     )
                     print("[Supplemental] Changes requested by \(shortName) on !\(snap.iid)")
-                    NotificationDispatcher.send(notification)
-                    persistNotificationRecord(notification, date: noteDate)
+                    if NotificationDispatcher.send(notification) {
+                        persistNotificationRecord(notification, date: noteDate)
+                    }
                 }
 
                 if let latestID = notes.first?.id {
@@ -572,26 +580,6 @@ final class PollCoordinator {
     private func markProcessed(todoID: String) {
         let context = ModelContext(modelContainer)
         context.insert(ProcessedTodo(gitlabTodoID: todoID))
-        try? context.save()
-    }
-
-    private func persist(classified: ClassifiedNotification, todoID: String, date: Date = .now) {
-        let context = ModelContext(modelContainer)
-        context.insert(ProcessedTodo(gitlabTodoID: todoID))
-
-        let record = NotificationRecord(
-            notificationType: classified.type.rawValue,
-            title: classified.title,
-            projectName: classified.projectName,
-            mrIID: classified.mrIID,
-            mrTitle: classified.mrTitle,
-            sourceURL: classified.sourceURL?.absoluteString,
-            senderName: classified.senderName,
-            senderAvatarURL: classified.senderAvatarURL?.absoluteString,
-            bodyExcerpt: classified.bodyExcerpt,
-            receivedAt: date
-        )
-        context.insert(record)
         try? context.save()
     }
 

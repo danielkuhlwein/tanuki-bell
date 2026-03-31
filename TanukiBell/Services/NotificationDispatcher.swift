@@ -4,11 +4,14 @@ import AppKit
 
 struct NotificationDispatcher {
 
-    static func send(_ notification: ClassifiedNotification) {
-        // Skip if user has disabled this notification type
+    /// Deliver the notification if the type is enabled.
+    /// Returns `true` if it was actually sent, `false` if skipped (type disabled).
+    /// Callers should only persist to history when this returns `true`.
+    @discardableResult
+    static func send(_ notification: ClassifiedNotification) -> Bool {
         guard NotificationPreferences.isEnabled(notification.type) else {
             print("[Dispatch] Skipped (disabled): \(notification.type.rawValue)")
-            return
+            return false
         }
         print("[Dispatch] Sending: \(notification.type.rawValue) — \(notification.title)")
 
@@ -58,5 +61,6 @@ struct NotificationDispatcher {
                 print("Failed to deliver notification: \(error)")
             }
         }
+        return true
     }
 }
