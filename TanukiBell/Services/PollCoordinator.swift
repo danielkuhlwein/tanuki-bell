@@ -89,12 +89,26 @@ final class PollCoordinator {
 
     // MARK: - Helpers
 
-    private static let iso8601Parser: ISO8601DateFormatter = ISO8601DateFormatter()
+    // GitLab GraphQL returns ISO8601 with fractional seconds + explicit offset,
+    // e.g. "2026-03-28T10:00:00.000+00:00". Two formatters are needed because
+    // ISO8601DateFormatter doesn't support combining withFractionalSeconds and
+    // withTimeZone in a single pass on all OS versions.
+    private static let iso8601Parser: ISO8601DateFormatter = {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime]
+        return f
+    }()
+    private static let iso8601ParserFractional: ISO8601DateFormatter = {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return f
+    }()
     private static let cutoff24h: TimeInterval = -24 * 60 * 60
 
-    /// Parse a GitLab ISO8601 timestamp string (e.g. "2026-03-28T10:00:00Z") to a Date.
+    /// Parse a GitLab ISO8601 timestamp string to a Date.
+    /// Returns nil if the string can't be parsed — callers should treat nil as "unknown age, skip".
     private static func parseDate(_ string: String) -> Date? {
-        iso8601Parser.date(from: string)
+        iso8601ParserFractional.date(from: string) ?? iso8601Parser.date(from: string)
     }
 
     // MARK: - Primary poll (todos)
@@ -116,7 +130,12 @@ final class PollCoordinator {
                 let cutoff = Date.now.addingTimeInterval(Self.cutoff24h)
                 var anyWithin24h = false
                 for todo in newTodos {
-                    let todoDate = Self.parseDate(todo.createdAt) ?? .now
+                    guard let todoDate = Self.parseDate(todo.createdAt) else {
+                        // Unparseable timestamp — unknown age, skip safely.
+                        print("[Poll]   Skipped (unparseable date): \(todo.id)")
+                        markProcessed(todoID: todo.id)
+                        continue
+                    }
 
                     guard todoDate >= cutoff else {
                         // Older than 24h — mark processed so it's not re-checked, but don't notify.
@@ -166,7 +185,10 @@ final class PollCoordinator {
             var anyWithin24h = false
 
             for todo in newTodos {
-                let todoDate = Self.parseDate(todo.createdAt) ?? .now
+                guard let todoDate = Self.parseDate(todo.createdAt) else {
+                    markProcessed(todoID: todo.id)
+                    continue
+                }
                 guard todoDate >= cutoff else {
                     markProcessed(todoID: todo.id)
                     continue
