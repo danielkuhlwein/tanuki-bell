@@ -127,39 +127,103 @@ actor GitLabService {
         }
     }
 
-    // MARK: - Supplemental: MR state poll
+    // MARK: - Current user
 
-    func fetchAssignedMergeRequests(
-        token: String,
-        updatedAfter: Date
-    ) async throws -> [RESTMergeRequest] {
-        let formatter = ISO8601DateFormatter()
-        let timestamp = formatter.string(from: updatedAfter)
-
-        var components = URLComponents(
-            url: baseURL.appendingPathComponent("api/v4/merge_requests"),
-            resolvingAgainstBaseURL: false
-        )!
-        components.queryItems = [
-            URLQueryItem(name: "scope", value: "assigned_to_me"),
-            URLQueryItem(name: "state", value: "all"),
-            URLQueryItem(name: "updated_after", value: timestamp),
-            URLQueryItem(name: "per_page", value: "50"),
-        ]
-
-        var request = URLRequest(url: components.url!)
+    func fetchCurrentUser(token: String) async throws -> RESTUser {
+        let url = baseURL.appendingPathComponent("api/v4/user")
+        var request = URLRequest(url: url)
         request.setValue(token, forHTTPHeaderField: "PRIVATE-TOKEN")
 
         let (data, response) = try await session.data(for: request)
-
         guard let httpResponse = response as? HTTPURLResponse else {
             throw GitLabServiceError.invalidResponse
         }
         guard httpResponse.statusCode == 200 else {
             throw GitLabServiceError.httpError(httpResponse.statusCode)
         }
+        return try JSONDecoder().decode(RESTUser.self, from: data)
+    }
 
+    // MARK: - MR list (multi-scope discovery)
+
+    func fetchMergeRequests(
+        token: String,
+        scope: String,
+        state: String = "opened",
+        updatedAfter: Date? = nil
+    ) async throws -> [RESTMergeRequest] {
+        var components = URLComponents(
+            url: baseURL.appendingPathComponent("api/v4/merge_requests"),
+            resolvingAgainstBaseURL: false
+        )!
+        var queryItems: [URLQueryItem] = [
+            URLQueryItem(name: "scope", value: scope),
+            URLQueryItem(name: "state", value: state),
+            URLQueryItem(name: "per_page", value: "50"),
+        ]
+        if let updatedAfter {
+            queryItems.append(URLQueryItem(
+                name: "updated_after",
+                value: ISO8601DateFormatter().string(from: updatedAfter)
+            ))
+        }
+        components.queryItems = queryItems
+
+        var request = URLRequest(url: components.url!)
+        request.setValue(token, forHTTPHeaderField: "PRIVATE-TOKEN")
+
+        let (data, response) = try await session.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw GitLabServiceError.invalidResponse
+        }
+        guard httpResponse.statusCode == 200 else {
+            throw GitLabServiceError.httpError(httpResponse.statusCode)
+        }
         return try JSONDecoder().decode([RESTMergeRequest].self, from: data)
+    }
+
+    // MARK: - MR detail (single MR with sha/pipeline/reviewers)
+
+    func fetchMRDetail(
+        token: String,
+        projectID: Int,
+        mrIID: Int
+    ) async throws -> RESTMergeRequest {
+        let path = "api/v4/projects/\(projectID)/merge_requests/\(mrIID)"
+        let url = baseURL.appendingPathComponent(path)
+        var request = URLRequest(url: url)
+        request.setValue(token, forHTTPHeaderField: "PRIVATE-TOKEN")
+
+        let (data, response) = try await session.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw GitLabServiceError.invalidResponse
+        }
+        guard httpResponse.statusCode == 200 else {
+            throw GitLabServiceError.httpError(httpResponse.statusCode)
+        }
+        return try JSONDecoder().decode(RESTMergeRequest.self, from: data)
+    }
+
+    // MARK: - MR approvals
+
+    func fetchMRApprovals(
+        token: String,
+        projectID: Int,
+        mrIID: Int
+    ) async throws -> RESTMRApprovals {
+        let path = "api/v4/projects/\(projectID)/merge_requests/\(mrIID)/approvals"
+        let url = baseURL.appendingPathComponent(path)
+        var request = URLRequest(url: url)
+        request.setValue(token, forHTTPHeaderField: "PRIVATE-TOKEN")
+
+        let (data, response) = try await session.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw GitLabServiceError.invalidResponse
+        }
+        guard httpResponse.statusCode == 200 else {
+            throw GitLabServiceError.httpError(httpResponse.statusCode)
+        }
+        return try JSONDecoder().decode(RESTMRApprovals.self, from: data)
     }
 
     // MARK: - Supplemental: MR notes poll

@@ -155,12 +155,17 @@ struct RESTMergeRequest: Decodable, Identifiable {
     let webUrl: String
     let author: RESTUser?
     let projectId: Int
+    let sha: String?
+    let detailedMergeStatus: String?
+    let headPipeline: RESTHeadPipeline?
 
     enum CodingKeys: String, CodingKey {
-        case id, iid, title, state
+        case id, iid, title, state, sha
         case webUrl = "web_url"
         case author
         case projectId = "project_id"
+        case detailedMergeStatus = "detailed_merge_status"
+        case headPipeline = "head_pipeline"
     }
 }
 
@@ -187,6 +192,26 @@ struct RESTUser: Decodable {
     let id: Int
     let name: String
     let username: String
+}
+
+// MARK: - MR approvals
+
+struct RESTMRApprovals: Decodable {
+    let approvedBy: [RESTApprover]
+
+    enum CodingKeys: String, CodingKey {
+        case approvedBy = "approved_by"
+    }
+}
+
+struct RESTApprover: Decodable {
+    let user: RESTUser
+}
+
+// MARK: - Head pipeline
+
+struct RESTHeadPipeline: Decodable {
+    let status: String
 }
 
 // MARK: - Classification output

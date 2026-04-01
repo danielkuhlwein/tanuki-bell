@@ -2,6 +2,7 @@ import SwiftUI
 
 struct NotificationRowView: View {
     let record: NotificationRecord
+    @State private var isHovered = false
 
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
@@ -35,7 +36,7 @@ struct NotificationRowView: View {
 
                 // MR reference: "!1003 - frontend/cav-ts-apps-tools"
                 if let iid = record.mrIID {
-                    Text("!\(iid, format: .number.grouping(.never)) \u{2014} \(stripOrg(record.projectName))")
+                    Text("!\(iid, format: .number.grouping(.never)) \u{2014} \(NotificationClassifier.stripOrg(record.projectName))")
                         .font(.system(size: 11))
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
@@ -62,15 +63,13 @@ struct NotificationRowView: View {
             }
         }
         .padding(.vertical, 5)
+        .padding(.horizontal, 4)
+        .background(
+            RoundedRectangle(cornerRadius: 6)
+                .fill(isHovered ? Color.accentColor.opacity(0.15) : .clear)
+        )
         .opacity(record.isRead ? 0.7 : 1.0)
-    }
-
-    /// Strip the org/group prefix from project path.
-    /// "cavnue/frontend/cav-ts-apps-tools" → "frontend/cav-ts-apps-tools"
-    private func stripOrg(_ fullPath: String) -> String {
-        let parts = fullPath.split(separator: "/")
-        guard parts.count > 1 else { return fullPath }
-        return parts.dropFirst().joined(separator: "/")
+        .onHover { isHovered = $0 }
     }
 
     /// Short relative time: "2m", "1h", "3d" etc.

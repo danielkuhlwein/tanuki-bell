@@ -16,6 +16,12 @@ final class TrackedMergeRequest {
     var lastSeenAt: Date
     var lastNoteID: Int?
 
+    // Snapshot fields for diff-based event detection (added v0.1.2)
+    var sha: String?
+    var headPipelineStatus: String?
+    var approvedByUsernames: [String]
+    var detailedMergeStatus: String?
+
     init(
         mrID: Int,
         iid: Int,
@@ -35,5 +41,9 @@ final class TrackedMergeRequest {
         self.webUrl = webUrl
         self.authorName = authorName
         self.lastSeenAt = .now
+        self.sha = nil
+        self.headPipelineStatus = nil
+        self.approvedByUsernames = []
+        self.detailedMergeStatus = nil
     }
 }

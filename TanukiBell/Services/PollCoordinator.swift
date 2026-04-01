@@ -13,6 +13,10 @@ final class PollCoordinator {
     private let modelContainer: ModelContainer
     private let onUpdate: (Int, Date) -> Void
 
+    /// Cached username of the authenticated GitLab user. Fetched once on first
+    /// supplemental poll and used to filter out self-generated events (e.g. own approvals).
+    private var currentUsername: String?
+
     var isRunning: Bool { primaryTimer != nil }
 
     init(
@@ -83,6 +87,30 @@ final class PollCoordinator {
         supplementalTimer = s
     }
 
+    // MARK: - Helpers
+
+    // GitLab GraphQL returns ISO8601 with fractional seconds + explicit offset,
+    // e.g. "2026-03-28T10:00:00.000+00:00". Two formatters are needed because
+    // ISO8601DateFormatter doesn't support combining withFractionalSeconds and
+    // withTimeZone in a single pass on all OS versions.
+    private static let iso8601Parser: ISO8601DateFormatter = {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime]
+        return f
+    }()
+    private static let iso8601ParserFractional: ISO8601DateFormatter = {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return f
+    }()
+    private static let cutoff24h: TimeInterval = -24 * 60 * 60
+
+    /// Parse a GitLab ISO8601 timestamp string to a Date.
+    /// Returns nil if the string can't be parsed — callers should treat nil as "unknown age, skip".
+    private static func parseDate(_ string: String) -> Date? {
+        iso8601ParserFractional.date(from: string) ?? iso8601Parser.date(from: string)
+    }
+
     // MARK: - Primary poll (todos)
 
     private func pollTodos() {
@@ -99,22 +127,42 @@ final class PollCoordinator {
 
                 print("[Poll] Fetched \(total) todos, \(newTodos.count) new")
 
+                let cutoff = Date.now.addingTimeInterval(Self.cutoff24h)
+                var anyWithin24h = false
                 for todo in newTodos {
+                    guard let todoDate = Self.parseDate(todo.createdAt) else {
+                        // Unparseable timestamp — unknown age, skip safely.
+                        print("[Poll]   Skipped (unparseable date): \(todo.id)")
+                        markProcessed(todoID: todo.id)
+                        continue
+                    }
+
+                    guard todoDate >= cutoff else {
+                        // Older than 24h — mark processed so it's not re-checked, but don't notify.
+                        markProcessed(todoID: todo.id)
+                        continue
+                    }
+                    anyWithin24h = true
+
                     guard let classified = NotificationClassifier.classify(todo: todo) else {
                         print("[Poll]   Skipped (non-MR target): \(todo.id)")
                         markProcessed(todoID: todo.id)
                         continue
                     }
                     print("[Poll]   \(classified.type.rawValue): \"\(classified.title)\" — \(classified.projectName) !\(classified.mrIID ?? 0)")
-                    NotificationDispatcher.send(classified)
-                    persist(classified: classified, todoID: todo.id)
+                    markProcessed(todoID: todo.id)
+                    if NotificationDispatcher.send(classified) {
+                        persistNotificationRecord(classified, date: todoDate)
+                    }
                 }
 
                 let unreadCount = fetchUnreadCount()
                 onUpdate(unreadCount, .now)
                 print("[Poll] Unread count: \(unreadCount)")
 
-                if connection.pageInfo.hasNextPage, let cursor = connection.pageInfo.endCursor {
+                // Todos are returned newest-first. If nothing on this page was within 24h,
+                // subsequent pages will be even older — stop paginating.
+                if anyWithin24h, connection.pageInfo.hasNextPage, let cursor = connection.pageInfo.endCursor {
                     print("[Poll] Fetching next page...")
                     await pollNextPage(token: token, cursor: cursor)
                 }
@@ -133,17 +181,30 @@ final class PollCoordinator {
         do {
             let connection = try await gitLabService.fetchPendingTodos(token: token, after: cursor)
             let newTodos = filterNewTodos(connection.nodes)
+            let cutoff = Date.now.addingTimeInterval(Self.cutoff24h)
+            var anyWithin24h = false
 
             for todo in newTodos {
+                guard let todoDate = Self.parseDate(todo.createdAt) else {
+                    markProcessed(todoID: todo.id)
+                    continue
+                }
+                guard todoDate >= cutoff else {
+                    markProcessed(todoID: todo.id)
+                    continue
+                }
+                anyWithin24h = true
                 guard let classified = NotificationClassifier.classify(todo: todo) else {
                     markProcessed(todoID: todo.id)
                     continue
                 }
-                NotificationDispatcher.send(classified)
-                persist(classified: classified, todoID: todo.id)
+                markProcessed(todoID: todo.id)
+                if NotificationDispatcher.send(classified) {
+                    persistNotificationRecord(classified, date: todoDate)
+                }
             }
 
-            if connection.pageInfo.hasNextPage, let next = connection.pageInfo.endCursor {
+            if anyWithin24h, connection.pageInfo.hasNextPage, let next = connection.pageInfo.endCursor {
                 await pollNextPage(token: token, cursor: next)
             }
         } catch {
@@ -158,53 +219,291 @@ final class PollCoordinator {
 
         print("[Supplemental] Starting MR state + notes poll")
         Task {
-            await pollMRStates(token: token)
+            await pollTrackedMRs(token: token)
             await pollNotes(token: token)
             cleanupOldRecords()
             print("[Supplemental] Done")
         }
     }
 
-    /// Detect merged/closed MR transitions
-    private func pollMRStates(token: String) async {
+    /// Fetch one MR scope, swallowing errors so a single-scope failure (e.g. 403 on
+    /// GitLab Free for `reviews_for_me`) doesn't suppress the other scopes.
+    private func fetchMRScope(token: String, scope: String) async -> [RESTMergeRequest] {
         do {
-            let since = Date.now.addingTimeInterval(-300)
-            let mergeRequests = try await gitLabService.fetchAssignedMergeRequests(
-                token: token, updatedAfter: since
+            return try await gitLabService.fetchMergeRequests(token: token, scope: scope)
+        } catch {
+            print("[Supplemental] Scope '\(scope)' failed: \(error)")
+            return []
+        }
+    }
+
+    /// Discover all watched MRs across 3 scopes, diff snapshots, emit notifications.
+    private func pollTrackedMRs(token: String) async {
+        // Resolve current user once — used to suppress self-generated events.
+        if currentUsername == nil {
+            currentUsername = try? await gitLabService.fetchCurrentUser(token: token).username
+            print("[Supplemental] Current user: \(currentUsername ?? "unknown")")
+        }
+
+        // Phase 1: Discover watched MR set across all relevant scopes.
+        // Each scope is fetched independently so a partial failure (e.g. reviews_for_me
+        // returning 403 on GitLab Free tier) only loses that scope rather than all discovery.
+        async let authored = fetchMRScope(token: token, scope: "created_by_me")
+        async let assigned = fetchMRScope(token: token, scope: "assigned_to_me")
+        async let reviewing = fetchMRScope(token: token, scope: "reviews_for_me")
+
+        let all = await authored + assigned + reviewing
+        // Deduplicate by MR id (same MR can appear in multiple scopes).
+        var seen = Set<Int>()
+        let unique = all.filter { seen.insert($0.id).inserted }
+
+        print("[Supplemental] Watched MRs: \(unique.count) across created/assigned/reviewing scopes")
+
+        // Phase 2: Diff each MR against its stored snapshot.
+        // MRs are processed sequentially (not withTaskGroup) because diffAndNotify
+        // performs SwiftData writes per MR. Parallel writes would require separate
+        // ModelContext instances per task — add withTaskGroup only if poll latency
+        // becomes a user-visible concern.
+        for mr in unique {
+            await diffAndNotify(mr: mr, token: token)
+        }
+
+        // Phase 3: Detect MRs that disappeared from the open list (merged/closed).
+        // Any tracked MR we previously saw as "opened" that is no longer in the
+        // fetched set may have been merged or closed since the last poll.
+        let openMRIDs = Set(unique.map(\.id))
+        await detectDisappearedMRs(openMRIDs: openMRIDs, token: token)
+    }
+
+    private func diffAndNotify(mr: RESTMergeRequest, token: String) async {
+        do {
+            async let detail = gitLabService.fetchMRDetail(token: token, projectID: mr.projectId, mrIID: mr.iid)
+            async let approvals = gitLabService.fetchMRApprovals(token: token, projectID: mr.projectId, mrIID: mr.iid)
+
+            let (currentDetail, currentApprovals) = try await (detail, approvals)
+
+            let context = ModelContext(modelContainer)
+            let mrID = mr.id
+            let descriptor = FetchDescriptor<TrackedMergeRequest>(
+                predicate: #Predicate { $0.mrID == mrID }
             )
-            print("[Supplemental] MR state: \(mergeRequests.count) MRs updated recently")
+            let existing = try context.fetch(descriptor).first
 
-            for mr in mergeRequests {
-                let transition = detectMRTransition(mr)
-                guard let transition else { continue }
-                print("[Supplemental] MR state transition: !\(mr.iid) → \(transition.rawValue)")
+            // Build snapshot from stored record (or empty snapshot for first encounter).
+            let snapshot = MRSnapshot(
+                sha: existing?.sha,
+                headPipelineStatus: existing?.headPipelineStatus,
+                approvedByUsernames: existing?.approvedByUsernames ?? []
+            )
 
-                let notification = ClassifiedNotification(
-                    type: transition,
-                    title: "\(transition.displayTitle): \(mr.title)",
-                    projectName: "Project #\(mr.projectId)",
-                    mrTitle: mr.title,
-                    mrIID: mr.iid,
-                    sourceURL: URL(string: mr.webUrl),
-                    senderName: NotificationClassifier.abbreviateName(mr.author?.name ?? "Someone"),
-                    senderAvatarURL: nil,
-                    threadID: "gitlab-\(mr.projectId)-!\(mr.iid)",
-                    notificationID: "mr-state-\(mr.id)-\(mr.state)",
-                    gitlabTodoID: "",
-                    bodyExcerpt: nil
+            let events = MRSnapshotDiffer.diff(
+                current: currentDetail,
+                approvals: currentApprovals,
+                snapshot: snapshot
+            )
+
+            // Always try to derive the real project path from the webUrl first —
+            // this is more reliable than the stored value, which may be the
+            // "Project #id" placeholder from before this fix was applied.
+            let urlDerivedPath = NotificationClassifier.projectPath(from: mr.webUrl)
+            let projectName = urlDerivedPath
+                ?? existing?.projectName
+                ?? "Project #\(mr.projectId)"
+
+            for event in events {
+                // Suppress events the current user caused themselves (e.g. approving
+                // an MR they were asked to review fires an approved event for their own username).
+                if case .approved(let byUsername) = event, byUsername == currentUsername {
+                    print("[Supplemental] Skipped self-approval by \(byUsername) on !\(mr.iid)")
+                    continue
+                }
+
+                // Pipeline events should only fire for MRs the current user authored —
+                // otherwise we'd notify for pipeline failures on every MR we review.
+                if event == .pipelineFailed || event == .pipelinePassed {
+                    guard currentDetail.author?.username == currentUsername else {
+                        print("[Supplemental] Skipped pipeline event (not author) on !\(mr.iid)")
+                        continue
+                    }
+                }
+
+                let notification = classifiedNotification(
+                    for: event,
+                    mr: currentDetail,
+                    projectName: projectName
                 )
-                NotificationDispatcher.send(notification)
+                print("[Supplemental] Diff event: \(event) on !\(mr.iid)")
+                if NotificationDispatcher.send(notification) {
+                    persistNotificationRecord(notification)
+                }
+            }
+
+            // Upsert snapshot.
+            if let tracked = existing {
+                tracked.state = currentDetail.state
+                tracked.sha = currentDetail.sha
+                tracked.headPipelineStatus = currentDetail.headPipeline?.status
+                tracked.approvedByUsernames = currentApprovals.approvedBy.map(\.user.username)
+                tracked.detailedMergeStatus = currentDetail.detailedMergeStatus
+                tracked.lastSeenAt = .now
+                // Heal stored placeholder project names (self-corrects on next poll).
+                if let realPath = urlDerivedPath, tracked.projectName.hasPrefix("Project #") {
+                    tracked.projectName = realPath
+                }
+            } else {
+                let tracked = TrackedMergeRequest(
+                    mrID: mr.id,
+                    iid: mr.iid,
+                    projectID: mr.projectId,
+                    projectName: NotificationClassifier.projectPath(from: mr.webUrl) ?? "Project #\(mr.projectId)",
+                    title: mr.title,
+                    state: mr.state,
+                    webUrl: mr.webUrl,
+                    authorName: mr.author?.name ?? "Unknown"
+                )
+                tracked.sha = currentDetail.sha
+                tracked.headPipelineStatus = currentDetail.headPipeline?.status
+                tracked.approvedByUsernames = currentApprovals.approvedBy.map(\.user.username)
+                tracked.detailedMergeStatus = currentDetail.detailedMergeStatus
+                context.insert(tracked)
+            }
+            try context.save()
+
+        } catch {
+            print("[Supplemental] Diff failed for MR !\(mr.iid): \(error)")
+        }
+    }
+
+    /// Check tracked "opened" MRs that are no longer in the fetched open set.
+    /// Fetches each one to confirm its current state, then fires merged/closed notifications.
+    private func detectDisappearedMRs(openMRIDs: Set<Int>, token: String) async {
+        let context = ModelContext(modelContainer)
+        let descriptor = FetchDescriptor<TrackedMergeRequest>(
+            predicate: #Predicate { $0.state == "opened" }
+        )
+        guard let tracked = try? context.fetch(descriptor) else { return }
+
+        let disappeared = tracked.filter { !openMRIDs.contains($0.mrID) }
+        guard !disappeared.isEmpty else { return }
+
+        print("[Supplemental] Checking \(disappeared.count) disappeared MR(s) for merged/closed state")
+
+        for mr in disappeared {
+            guard let detail = try? await gitLabService.fetchMRDetail(
+                token: token, projectID: mr.projectID, mrIID: mr.iid
+            ) else { continue }
+
+            guard detail.state == "merged" || detail.state == "closed" else {
+                // Still open (e.g. temporarily filtered by scope) — refresh lastSeenAt
+                // so the 7-day TTL cleanup doesn't delete it prematurely.
+                mr.lastSeenAt = .now
+                try? context.save()
+                continue
+            }
+
+            let notifType: NotificationType = detail.state == "merged" ? .merged : .closed
+            let projectName = NotificationClassifier.projectPath(from: mr.webUrl) ?? mr.projectName
+            let notification = ClassifiedNotification(
+                type: notifType,
+                title: notifType == .merged ? "MR Merged" : "MR Closed",
+                projectName: projectName,
+                mrTitle: mr.title,
+                mrIID: mr.iid,
+                sourceURL: URL(string: mr.webUrl),
+                senderName: mr.authorName,
+                senderAvatarURL: nil,
+                threadID: "gitlab-\(projectName)-!\(mr.iid)",
+                notificationID: "state-\(mr.mrID)-\(detail.state)",
+                gitlabTodoID: "",
+                bodyExcerpt: nil
+            )
+            print("[Supplemental] MR !\(mr.iid) transitioned to \(detail.state)")
+            if NotificationDispatcher.send(notification) {
                 persistNotificationRecord(notification)
             }
-        } catch {
-            print("[PollCoordinator] MR state poll failed: \(error)")
+
+            // Update stored state to prevent re-firing on subsequent polls.
+            mr.state = detail.state
+            try? context.save()
+        }
+    }
+
+    private func classifiedNotification(
+        for event: MRDiffEvent,
+        mr: RESTMergeRequest,
+        projectName: String
+    ) -> ClassifiedNotification {
+        let threadID = "gitlab-\(projectName)-!\(mr.iid)"
+
+        switch event {
+        case .newCommitsPushed:
+            let pusherName = NotificationClassifier.abbreviateName(mr.author?.name ?? "Someone")
+            return ClassifiedNotification(
+                type: .newCommitsPushed,
+                title: "New Commits by \(pusherName)",
+                projectName: projectName,
+                mrTitle: mr.title,
+                mrIID: mr.iid,
+                sourceURL: URL(string: mr.webUrl),
+                senderName: mr.author?.name ?? "Someone",
+                senderAvatarURL: nil,
+                threadID: threadID,
+                notificationID: "commits-\(mr.id)-\(mr.sha ?? "")",
+                gitlabTodoID: "",
+                bodyExcerpt: nil
+            )
+        case .pipelineFailed:
+            return ClassifiedNotification(
+                type: .pipelineFailed,
+                title: "Pipeline Failed",
+                projectName: projectName,
+                mrTitle: mr.title,
+                mrIID: mr.iid,
+                sourceURL: URL(string: mr.webUrl),
+                senderName: mr.author?.name ?? "Someone",
+                senderAvatarURL: nil,
+                threadID: threadID,
+                notificationID: "pipeline-failed-\(mr.id)-\(mr.sha ?? "unknown")",
+                gitlabTodoID: "",
+                bodyExcerpt: nil
+            )
+        case .pipelinePassed:
+            return ClassifiedNotification(
+                type: .pipelinePassed,
+                title: "Pipeline Passed",
+                projectName: projectName,
+                mrTitle: mr.title,
+                mrIID: mr.iid,
+                sourceURL: URL(string: mr.webUrl),
+                senderName: mr.author?.name ?? "Someone",
+                senderAvatarURL: nil,
+                threadID: threadID,
+                notificationID: "pipeline-passed-\(mr.id)-\(mr.sha ?? "unknown")",
+                gitlabTodoID: "",
+                bodyExcerpt: nil
+            )
+        case .approved(let byUsername):
+            return ClassifiedNotification(
+                type: .approved,
+                title: "Approved by \(NotificationClassifier.abbreviateName(byUsername))",
+                projectName: projectName,
+                mrTitle: mr.title,
+                mrIID: mr.iid,
+                sourceURL: URL(string: mr.webUrl),
+                senderName: byUsername,
+                senderAvatarURL: nil,
+                threadID: threadID,
+                notificationID: "approved-\(mr.id)-\(byUsername)",
+                gitlabTodoID: "",
+                bodyExcerpt: nil
+            )
         }
     }
 
     /// Detect edited comments on tracked MRs
     private func pollNotes(token: String) async {
         do {
-            let snapshots = fetchTrackedMRSnapshots()
+            let snapshots = fetchNotesPollSnapshots()
             print("[Supplemental] Notes: checking \(snapshots.count) tracked MRs")
 
             for snap in snapshots {
@@ -212,8 +511,12 @@ final class PollCoordinator {
                     token: token, projectID: snap.projectID, mrIID: snap.iid
                 )
 
+                let noteCutoff = Date.now.addingTimeInterval(Self.cutoff24h)
+
+                // Process non-system notes (edited comments) newer than watermark and within 24h.
                 for note in notes where !note.system {
                     if let lastID = snap.lastNoteID, note.id <= lastID { continue }
+                    guard note.createdAt >= noteCutoff else { continue }
 
                     if note.isEdited {
                         let shortName = NotificationClassifier.abbreviateName(note.author.name)
@@ -229,10 +532,46 @@ final class PollCoordinator {
                             threadID: "gitlab-\(snap.projectName)-!\(snap.iid)",
                             notificationID: "note-edited-\(note.id)",
                             gitlabTodoID: "",
-                            bodyExcerpt: note.body
+                            bodyExcerpt: note.body.strippingHTML
                         )
-                        NotificationDispatcher.send(notification)
-                        persistNotificationRecord(notification)
+                        if NotificationDispatcher.send(notification) {
+                            persistNotificationRecord(notification, date: note.updatedAt)
+                        }
+                    }
+                }
+
+                // Process system notes for changes-requested events (within 24h only).
+                let recentNotes = notes.filter { $0.createdAt >= noteCutoff }
+                let changesRequestedAuthors = SystemNoteParser.changesRequestedAuthors(
+                    in: recentNotes,
+                    after: snap.lastNoteID
+                )
+                for authorName in changesRequestedAuthors {
+                    // Find the matching system note to get its timestamp and stable ID.
+                    let matchingNote = recentNotes.first(where: {
+                        $0.system && $0.author.name == authorName
+                            && $0.body.lowercased().contains(SystemNoteParser.changesRequestedPattern)
+                    })
+                    let noteDate = matchingNote?.createdAt ?? .now
+                    let noteID = matchingNote?.id ?? 0
+                    let shortName = NotificationClassifier.abbreviateName(authorName)
+                    let notification = ClassifiedNotification(
+                        type: .changesRequested,
+                        title: "Changes Requested by \(shortName)",
+                        projectName: snap.projectName,
+                        mrTitle: snap.title,
+                        mrIID: snap.iid,
+                        sourceURL: URL(string: snap.webUrl),
+                        senderName: authorName,
+                        senderAvatarURL: nil,
+                        threadID: "gitlab-\(snap.projectName)-!\(snap.iid)",
+                        notificationID: "changes-requested-\(snap.mrID)-\(noteID)",
+                        gitlabTodoID: "",
+                        bodyExcerpt: nil
+                    )
+                    print("[Supplemental] Changes requested by \(shortName) on !\(snap.iid)")
+                    if NotificationDispatcher.send(notification) {
+                        persistNotificationRecord(notification, date: noteDate)
                     }
                 }
 
@@ -242,55 +581,6 @@ final class PollCoordinator {
             }
         } catch {
             print("[PollCoordinator] Notes poll failed: \(error)")
-        }
-    }
-
-    // MARK: - MR state transition detection
-
-    private func detectMRTransition(_ mr: RESTMergeRequest) -> NotificationType? {
-        let context = ModelContext(modelContainer)
-        let mrID = mr.id
-        let descriptor = FetchDescriptor<TrackedMergeRequest>(
-            predicate: #Predicate { $0.mrID == mrID }
-        )
-
-        do {
-            let existing = try context.fetch(descriptor).first
-
-            if let tracked = existing {
-                let oldState = tracked.state
-                let newState = mr.state
-
-                tracked.state = newState
-                tracked.lastSeenAt = .now
-                try context.save()
-
-                if oldState != newState {
-                    switch newState {
-                    case "merged": return .merged
-                    case "closed": return .closed
-                    default: return nil
-                    }
-                }
-                return nil
-            } else {
-                let tracked = TrackedMergeRequest(
-                    mrID: mr.id,
-                    iid: mr.iid,
-                    projectID: mr.projectId,
-                    projectName: "Project #\(mr.projectId)",
-                    title: mr.title,
-                    state: mr.state,
-                    webUrl: mr.webUrl,
-                    authorName: mr.author?.name ?? "Unknown"
-                )
-                context.insert(tracked)
-                try context.save()
-                return nil
-            }
-        } catch {
-            print("[PollCoordinator] MR transition detection failed: \(error)")
-            return nil
         }
     }
 
@@ -315,26 +605,7 @@ final class PollCoordinator {
         try? context.save()
     }
 
-    private func persist(classified: ClassifiedNotification, todoID: String) {
-        let context = ModelContext(modelContainer)
-        context.insert(ProcessedTodo(gitlabTodoID: todoID))
-
-        let record = NotificationRecord(
-            notificationType: classified.type.rawValue,
-            title: classified.title,
-            projectName: classified.projectName,
-            mrIID: classified.mrIID,
-            mrTitle: classified.mrTitle,
-            sourceURL: classified.sourceURL?.absoluteString,
-            senderName: classified.senderName,
-            senderAvatarURL: classified.senderAvatarURL?.absoluteString,
-            bodyExcerpt: classified.bodyExcerpt
-        )
-        context.insert(record)
-        try? context.save()
-    }
-
-    private func persistNotificationRecord(_ notification: ClassifiedNotification) {
+    private func persistNotificationRecord(_ notification: ClassifiedNotification, date: Date = .now) {
         let context = ModelContext(modelContainer)
         let record = NotificationRecord(
             notificationType: notification.type.rawValue,
@@ -345,7 +616,8 @@ final class PollCoordinator {
             sourceURL: notification.sourceURL?.absoluteString,
             senderName: notification.senderName,
             senderAvatarURL: notification.senderAvatarURL?.absoluteString,
-            bodyExcerpt: notification.bodyExcerpt
+            bodyExcerpt: notification.bodyExcerpt,
+            receivedAt: date
         )
         context.insert(record)
         try? context.save()
@@ -359,7 +631,7 @@ final class PollCoordinator {
         return (try? context.fetchCount(descriptor)) ?? 0
     }
 
-    struct MRSnapshot {
+    struct NotesPollSnapshot {
         let mrID: Int
         let iid: Int
         let projectID: Int
@@ -369,13 +641,13 @@ final class PollCoordinator {
         let lastNoteID: Int?
     }
 
-    private func fetchTrackedMRSnapshots() -> [MRSnapshot] {
+    private func fetchNotesPollSnapshots() -> [NotesPollSnapshot] {
         let context = ModelContext(modelContainer)
         let descriptor = FetchDescriptor<TrackedMergeRequest>(
             sortBy: [SortDescriptor(\.lastSeenAt, order: .reverse)]
         )
         return ((try? context.fetch(descriptor)) ?? []).map { mr in
-            MRSnapshot(
+            NotesPollSnapshot(
                 mrID: mr.mrID, iid: mr.iid, projectID: mr.projectID,
                 projectName: mr.projectName, title: mr.title,
                 webUrl: mr.webUrl, lastNoteID: mr.lastNoteID
