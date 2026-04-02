@@ -3,13 +3,27 @@
     <channel>
         <title>Tanuki Bell</title>
         <item>
+            <title>0.3.1</title>
+            <pubDate>Thu, 02 Apr 2026 09:49:53 -0600</pubDate>
+            <link>https://github.com/danielkuhlwein/tanuki-bell/releases</link>
+            <sparkle:version>5</sparkle:version>
+            <sparkle:shortVersionString>0.3.1</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <enclosure url="https://github.com/danielkuhlwein/tanuki-bell/releases/download/v0.3.1/TanukiBell-0.3.1.dmg" length="5273423" type="application/octet-stream" sparkle:edSignature="3oV2uc0fnjIyw9yAEyvh8Q5DrY+2wTx4jKQFyIiEQkkVoDfcKoya1Qzok4m2o5WJS+fuOhtevMAS6/IkaCtICA=="/>
+            <sparkle:deltas>
+                <enclosure url="https://github.com/danielkuhlwein/tanuki-bell/releases/download/v0.3.1/Tanuki%20Bell5-4.delta" sparkle:deltaFrom="4" length="132126" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977616" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="LpDu9Bp9lm1AzaiaJL52Gbc98EH/MVnD34YZANh5WnwWyhvGNtT9H+Xx+7XsdSk5/QBStBj4L+a4maXwzFP6CQ=="/>
+                <enclosure url="https://github.com/danielkuhlwein/tanuki-bell/releases/download/v0.3.1/Tanuki%20Bell5-3.delta" sparkle:deltaFrom="3" length="1123122" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977616" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="dHH0+D0fqSOzk8J1ONUSrg1Di4WNAOc1Nv9hvvYrCuXrlHtnJ6g+BLJhIzRFDF1K6254Dl++BMqOzsKnaLQCDw=="/>
+                <enclosure url="https://github.com/danielkuhlwein/tanuki-bell/releases/download/v0.3.1/Tanuki%20Bell5-2.delta" sparkle:deltaFrom="2" length="1205270" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977616" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="xaakPWPQllQZU2c2JMm8QYfuDwHpvmGVs1el140scHBifIP79IUjJN6d9vOkSjl7Gt4wnv8WIKYyEl74bbGKCw=="/>
+            </sparkle:deltas>
+        </item>
+        <item>
             <title>0.3.0</title>
             <pubDate>Wed, 01 Apr 2026 22:52:08 -0600</pubDate>
             <link>https://github.com/danielkuhlwein/tanuki-bell/releases</link>
             <sparkle:version>4</sparkle:version>
             <sparkle:shortVersionString>0.3.0</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-            <enclosure url="https://github.com/danielkuhlwein/tanuki-bell/releases/download/v0.3.0/TanukiBell-0.3.0.dmg" length="5266265" type="application/octet-stream" sparkle:edSignature="bw6P2KW3jMJ0pKfVWHqWi5QZgPBLUeGp0Hir9VvUdhRtsiUomy1uWRfVy73VUqEYRXWWRMyaXqCfEhDk0DJSBg=="/>
+            <enclosure url="https://github.com/danielkuhlwein/tanuki-bell/releases/download/v0.3.1/TanukiBell-0.3.0.dmg" length="5266265" type="application/octet-stream" sparkle:edSignature="bw6P2KW3jMJ0pKfVWHqWi5QZgPBLUeGp0Hir9VvUdhRtsiUomy1uWRfVy73VUqEYRXWWRMyaXqCfEhDk0DJSBg=="/>
             <sparkle:deltas>
                 <enclosure url="https://github.com/danielkuhlwein/tanuki-bell/releases/download/v0.3.0/Tanuki%20Bell4-3.delta" sparkle:deltaFrom="3" length="1114406" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977616" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="3pV4oy7I+tPj45XVSzU19tj8YEZQbJqW2AwE5AM2p8zI015tUUDY9cJtOLUYT1SdCJsagHzzYAX54ZRp1B2yDg=="/>
                 <enclosure url="https://github.com/danielkuhlwein/tanuki-bell/releases/download/v0.3.0/Tanuki%20Bell4-2.delta" sparkle:deltaFrom="2" length="1198438" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977616" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="v1ndB0szh5yPTw0Ixpmx/wRQ45aWohJqHH9sxrzyQPv6jthlhSJ9ZdqnAxzXCWu/mb86phHCHTrAwBKsmAVuAg=="/>
@@ -22,19 +36,10 @@
             <sparkle:version>3</sparkle:version>
             <sparkle:shortVersionString>0.2.0</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-            <enclosure url="https://github.com/danielkuhlwein/tanuki-bell/releases/download/v0.3.0/TanukiBell-0.2.0.dmg" length="3743073" type="application/octet-stream" sparkle:edSignature="q8snqhMvB+FQM88QjLFj7EVYkvU411Ff/6McpdaAitFVfuDxcggU8iZub4sFP0035HrSXyItt+M6Z/cGdpQ3Bg=="/>
+            <enclosure url="https://github.com/danielkuhlwein/tanuki-bell/releases/download/v0.3.1/TanukiBell-0.2.0.dmg" length="3743073" type="application/octet-stream" sparkle:edSignature="q8snqhMvB+FQM88QjLFj7EVYkvU411Ff/6McpdaAitFVfuDxcggU8iZub4sFP0035HrSXyItt+M6Z/cGdpQ3Bg=="/>
             <sparkle:deltas>
                 <enclosure url="https://github.com/danielkuhlwein/tanuki-bell/releases/download/v0.2.0/Tanuki%20Bell3-2.delta" sparkle:deltaFrom="2" length="245222" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977616" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="5D9WcmkxGSqYNI834/Ftzsnk5jnWCQo3ZgYLfFKQzBT78yRMn3dOweu3QFIDCwJ+0ahmkV352/qEEDfNKe0EDw=="/>
             </sparkle:deltas>
-        </item>
-        <item>
-            <title>0.1.1</title>
-            <pubDate>Sun, 29 Mar 2026 23:00:37 -0600</pubDate>
-            <link>https://github.com/danielkuhlwein/tanuki-bell/releases</link>
-            <sparkle:version>2</sparkle:version>
-            <sparkle:shortVersionString>0.1.1</sparkle:shortVersionString>
-            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-            <enclosure url="https://github.com/danielkuhlwein/tanuki-bell/releases/download/v0.3.0/TanukiBell-0.1.1.dmg" length="3635453" type="application/octet-stream" sparkle:edSignature="/EhPVQPYTHbnqM8TYxnYvgvZvKjs+kadYXstV8x1LhqZYycaGeHVZnd0x0t6LWhaizU8yKYPBwJxoS8HzmQnBw=="/>
         </item>
     </channel>
 </rss>
