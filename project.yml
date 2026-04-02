@@ -25,6 +25,7 @@ targets:
       - TanukiBell
     resources:
       - TanukiBell/Resources/Assets.xcassets
+      - TanukiBell/Resources/Sounds
     dependencies:
       - package: Sparkle
         product: Sparkle
