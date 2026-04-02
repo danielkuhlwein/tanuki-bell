@@ -49,6 +49,13 @@ struct TanukiBellApp: App {
                     appDelegate.modelContainer = modelContainer
                     appDelegate.appState = appState
 
+                    // Demo mode: seed fictional data, skip real polling
+                    if CommandLine.arguments.contains("-demo"), !appState.isConnected {
+                        let unread = DemoDataSeeder.seed(into: modelContainer)
+                        appState.activateDemoMode(unreadCount: unread)
+                        return
+                    }
+
                     // Auto-start polling if token exists
                     if KeychainStore.loadToken() != nil {
                         appState.startPolling(modelContainer: modelContainer)

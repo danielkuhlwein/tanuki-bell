@@ -66,6 +66,13 @@ final class AppState {
         isConnected = false
     }
 
+    /// Activate demo mode: mark as connected with a given unread count, no real polling.
+    func activateDemoMode(unreadCount: Int) {
+        self.isConnected = true
+        self.lastPollTime = .now
+        self.unreadCount = unreadCount
+    }
+
     /// Restart polling (e.g. after settings change).
     func restartPolling(modelContainer: ModelContainer) {
         stopPolling()

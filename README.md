@@ -168,6 +168,17 @@ TanukiBell/
 
 </details>
 
+## Demo Mode
+
+Launch with the `-demo` flag to populate the app with fictional notification data — useful for screenshots, UI development, or exploring the app without connecting to a real GitLab instance. No API calls are made.
+
+```bash
+# From a Release build
+open "Tanuki Bell.app" --args -demo
+
+# Or in Xcode: Edit Scheme → Run → Arguments → add "-demo"
+```
+
 ## Known Issues
 
 | Issue | Detail |

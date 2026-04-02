@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0A1DE40CAFE2B33701DEMO01 /* DemoDataSeeder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A1DE40CAFE2B33701DEMO00 /* DemoDataSeeder.swift */; };
 		0C432C8F383B6AADBA0C2140 /* NotificationRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09B758812838EE86B0A6F544 /* NotificationRecord.swift */; };
 		0D68DFE1EDE88B1C0ED0E8CC /* TanukiBellApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40EE182A8ACD551F6EF38665 /* TanukiBellApp.swift */; };
 		100A76ED9DC73CCEC5001AC0 /* IdleMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC141EF579782F9958BDE875 /* IdleMonitor.swift */; };
@@ -56,6 +57,7 @@
 
 /* Begin PBXFileReference section */
 		0309D3A6E00E7CD712AF9B4F /* NotificationClassifierTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationClassifierTests.swift; sourceTree = "<group>"; };
+		0A1DE40CAFE2B33701DEMO00 /* DemoDataSeeder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoDataSeeder.swift; sourceTree = "<group>"; };
 		09B758812838EE86B0A6F544 /* NotificationRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationRecord.swift; sourceTree = "<group>"; };
 		0ACCDA4B3B3448965C3CE2CD /* SystemNoteParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemNoteParser.swift; sourceTree = "<group>"; };
 		15D3CB7E97E1B3EA3503AA08 /* PollState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PollState.swift; sourceTree = "<group>"; };
@@ -202,6 +204,7 @@
 			children = (
 				C6D0B9CB80DA2F77C7E209F2 /* AppDelegate.swift */,
 				7EE749B7EA8C04BABA7DDE87 /* AppState.swift */,
+				0A1DE40CAFE2B33701DEMO00 /* DemoDataSeeder.swift */,
 				CC7B4EA0291551110977BC52 /* Info.plist */,
 				7253C6ACF2891B5F56460161 /* TanukiBell.entitlements */,
 				40EE182A8ACD551F6EF38665 /* TanukiBellApp.swift */,
@@ -331,6 +334,7 @@
 				A00C213E0DA198DE4744ACC2 /* AppDelegate.swift in Sources */,
 				5653F1F940A3C5A2D94D2CC6 /* AppState.swift in Sources */,
 				AC43FC4525A21F371FB15AD1 /* ConnectionSettingsTab.swift in Sources */,
+				0A1DE40CAFE2B33701DEMO01 /* DemoDataSeeder.swift in Sources */,
 				605581C8FC06B11AED528C28 /* GeneralSettingsTab.swift in Sources */,
 				62A6B66CF8E4EBE16E7F3558 /* GitLabAPITypes.swift in Sources */,
 				790570F6788C01850004E059 /* GitLabService.swift in Sources */,
