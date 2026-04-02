@@ -34,8 +34,8 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.danielkuhlwein.tanuki-bell
         PRODUCT_NAME: "Tanuki Bell"
         PRODUCT_MODULE_NAME: TanukiBell
-        MARKETING_VERSION: "0.2.0"
-        CURRENT_PROJECT_VERSION: "3"
+        MARKETING_VERSION: "0.3.0"
+        CURRENT_PROJECT_VERSION: "4"
         INFOPLIST_FILE: TanukiBell/Info.plist
         CODE_SIGN_ENTITLEMENTS: TanukiBell/TanukiBell.entitlements
         CODE_SIGN_IDENTITY: "-"
