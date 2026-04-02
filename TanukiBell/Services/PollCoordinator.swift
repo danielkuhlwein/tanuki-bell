@@ -318,6 +318,14 @@ final class PollCoordinator {
                     continue
                 }
 
+                // New-commits events on the user's own MR are almost certainly self-pushes.
+                // We can't distinguish "who pushed" from the REST API, but suppressing for
+                // authored MRs avoids the most common false positive.
+                if event == .newCommitsPushed, let currentUsername, currentDetail.author?.username == currentUsername {
+                    print("[Supplemental] Skipped self-push on !\(mr.iid)")
+                    continue
+                }
+
                 // Pipeline events should only fire for MRs the current user authored —
                 // otherwise we'd notify for pipeline failures on every MR we review.
                 if event == .pipelineFailed || event == .pipelinePassed {
@@ -401,8 +409,22 @@ final class PollCoordinator {
                 continue
             }
 
+            // Suppress only when the current user personally merged/closed the MR.
+            // Use merge_user (GitLab 15.x+) or merged_by (legacy) / closed_by so
+            // auto-merges and maintainer-merges still notify.
+            let actor = detail.state == "merged"
+                ? (detail.mergeUser ?? detail.mergedBy)
+                : detail.closedBy
+            if let currentUsername, actor?.username == currentUsername {
+                print("[Supplemental] Skipped self-\(detail.state) on !\(mr.iid)")
+                mr.state = detail.state
+                try? context.save()
+                continue
+            }
+
             let notifType: NotificationType = detail.state == "merged" ? .merged : .closed
             let projectName = NotificationClassifier.projectPath(from: mr.webUrl) ?? mr.projectName
+            let actorName = actor?.name ?? mr.authorName
             let notification = ClassifiedNotification(
                 type: notifType,
                 title: notifType == .merged ? "MR Merged" : "MR Closed",
@@ -410,7 +432,7 @@ final class PollCoordinator {
                 mrTitle: mr.title,
                 mrIID: mr.iid,
                 sourceURL: URL(string: mr.webUrl),
-                senderName: mr.authorName,
+                senderName: actorName,
                 senderAvatarURL: nil,
                 threadID: "gitlab-\(projectName)-!\(mr.iid)",
                 notificationID: "state-\(mr.mrID)-\(detail.state)",
@@ -517,6 +539,8 @@ final class PollCoordinator {
                 for note in notes where !note.system {
                     if let lastID = snap.lastNoteID, note.id <= lastID { continue }
                     guard note.createdAt >= noteCutoff else { continue }
+                    // Skip the current user's own comments.
+                    if note.author.username == currentUsername { continue }
 
                     if note.isEdited {
                         let shortName = NotificationClassifier.abbreviateName(note.author.name)
@@ -541,7 +565,8 @@ final class PollCoordinator {
                 }
 
                 // Process system notes for changes-requested events (within 24h only).
-                let recentNotes = notes.filter { $0.createdAt >= noteCutoff }
+                // Exclude notes authored by the current user so we don't notify on our own actions.
+                let recentNotes = notes.filter { $0.createdAt >= noteCutoff && $0.author.username != currentUsername }
                 let changesRequestedAuthors = SystemNoteParser.changesRequestedAuthors(
                     in: recentNotes,
                     after: snap.lastNoteID

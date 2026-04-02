@@ -154,15 +154,20 @@ struct RESTMergeRequest: Decodable, Identifiable {
     let state: String
     let webUrl: String
     let author: RESTUser?
+    let mergeUser: RESTUser?
+    let mergedBy: RESTUser?
+    let closedBy: RESTUser?
     let projectId: Int
     let sha: String?
     let detailedMergeStatus: String?
     let headPipeline: RESTHeadPipeline?
 
     enum CodingKeys: String, CodingKey {
-        case id, iid, title, state, sha
+        case id, iid, title, state, sha, author
         case webUrl = "web_url"
-        case author
+        case mergeUser = "merge_user"
+        case mergedBy = "merged_by"
+        case closedBy = "closed_by"
         case projectId = "project_id"
         case detailedMergeStatus = "detailed_merge_status"
         case headPipeline = "head_pipeline"
