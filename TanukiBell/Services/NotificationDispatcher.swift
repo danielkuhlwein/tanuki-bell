@@ -25,7 +25,13 @@ struct NotificationDispatcher {
         }
         content.threadIdentifier = notification.threadID
         content.categoryIdentifier = "MERGE_REQUEST"
-        content.sound = UserDefaults.standard.bool(forKey: "sound_enabled") ? .default : nil
+        if UserDefaults.standard.bool(forKey: "sound_enabled") {
+            let resolved = SoundPreferences.resolvedSound(for: notification.type)
+            print("[Dispatch] Sound for \(notification.type.rawValue): \(resolved)")
+            content.sound = resolved
+        } else {
+            content.sound = nil
+        }
         content.userInfo = [
             "url": notification.sourceURL?.absoluteString ?? "",
             "todoID": notification.gitlabTodoID,

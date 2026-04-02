@@ -13,6 +13,38 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         UNUserNotificationCenter.current().delegate = self
         registerNotificationCategories()
         requestNotificationPermission()
+        installNotificationSounds()
+    }
+
+    /// Copy bundled .wav sounds to ~/Library/Sounds/ so UNNotificationSound can find them.
+    private func installNotificationSounds() {
+        let fileManager = FileManager.default
+        let destDir = fileManager.homeDirectoryForCurrentUser
+            .appendingPathComponent("Library/Sounds", isDirectory: true)
+
+        do {
+            try fileManager.createDirectory(at: destDir, withIntermediateDirectories: true)
+        } catch {
+            print("[Sounds] Failed to create ~/Library/Sounds/: \(error)")
+            return
+        }
+
+        for sound in NotificationSoundName.allCatSounds {
+            guard let fileName = sound.fileName else { continue }
+            let dest = destDir.appendingPathComponent(fileName)
+            guard let src = Bundle.main.url(forResource: sound.rawValue, withExtension: "wav") else {
+                print("[Sounds] Missing bundle resource: \(sound.rawValue).wav")
+                continue
+            }
+            do {
+                if fileManager.fileExists(atPath: dest.path) {
+                    try fileManager.removeItem(at: dest)
+                }
+                try fileManager.copyItem(at: src, to: dest)
+            } catch {
+                print("[Sounds] Failed to install \(fileName): \(error)")
+            }
+        }
     }
 
     // MARK: - Notification setup
