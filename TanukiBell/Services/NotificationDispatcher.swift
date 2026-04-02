@@ -3,6 +3,8 @@ import UserNotifications
 import AppKit
 
 struct NotificationDispatcher {
+    // Holds NSSound references during playback — NSSound stops if its object is deallocated.
+    @MainActor private static var activeSounds: [NSSound] = []
 
     /// Deliver the notification if the type is enabled.
     /// Returns `true` if it was actually sent, `false` if skipped (type disabled).
@@ -26,9 +28,25 @@ struct NotificationDispatcher {
         content.threadIdentifier = notification.threadID
         content.categoryIdentifier = "MERGE_REQUEST"
         if UserDefaults.standard.bool(forKey: "sound_enabled") {
-            let resolved = SoundPreferences.resolvedSound(for: notification.type)
-            print("[Dispatch] Sound for \(notification.type.rawValue): \(resolved)")
-            content.sound = resolved
+            let soundName = SoundPreferences.soundOverride(for: notification.type) ?? SoundPreferences.globalSound()
+            print("[Dispatch] Sound for \(notification.type.rawValue): \(soundName.rawValue)")
+            if soundName == .systemDefault {
+                // Let UNNotificationSound handle the macOS system alert sound.
+                content.sound = .default
+            } else {
+                // UNNotificationSound(named:) silently falls back to system default on macOS
+                // because UserNotificationsServer cannot reliably access app-bundled files.
+                // For a menu bar app that is always running, playing via NSSound is reliable.
+                content.sound = nil
+                Task { @MainActor in
+                    guard let url = Bundle.main.url(forResource: soundName.rawValue, withExtension: "wav"),
+                          let sound = NSSound(contentsOf: url, byReference: false) else { return }
+                    activeSounds.append(sound)
+                    sound.play()
+                    try? await Task.sleep(for: .seconds(3))
+                    activeSounds.removeAll { $0 === sound }
+                }
+            }
         } else {
             content.sound = nil
         }
