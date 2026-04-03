@@ -7,12 +7,35 @@
   [![Swift](https://img.shields.io/badge/Swift-6-FA7343?style=flat-square&logo=swift&logoColor=white)](https://swift.org/)
   [![SwiftUI](https://img.shields.io/badge/SwiftUI-blue?style=flat-square&logo=swift&logoColor=white)](https://developer.apple.com/xcode/swiftui/)
   [![License: MIT](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)](LICENSE)
+
+  <br>
+
+  <img src="docs/images/menubar_expanded_new.png" alt="Tanuki Bell menu bar popover showing new notifications" width="380">
 </div>
 
 <br>
 
+A lightweight macOS menu bar app that watches your GitLab merge requests and sends you native notifications when something needs your attention — reviews, comments, approvals, pipeline failures, and more.
+
+No browser tab to keep open. No email noise. Just a quiet bell in your menu bar that lights up when it matters.
+
 > [!NOTE]
-> A native macOS menu bar app that monitors GitLab for merge request activity and delivers classified, actionable notifications. Replaces the [multi-component script-based system](https://github.com/danielkuhlwein/gitlab-pr-notifier) with a single, polished SwiftUI application — no Mail.app dependency, no LaunchAgents, no Terminal commands.
+> Replaces the [multi-component script-based system](https://github.com/danielkuhlwein/gitlab-pr-notifier) with a single, polished SwiftUI application — no Mail.app dependency, no LaunchAgents, no Terminal commands.
+
+<div align="center">
+  <table>
+    <tr>
+      <td align="center"><strong>Native macOS notifications</strong><br><sub>Grouped per merge request</sub></td>
+      <td align="center"><strong>Searchable history</strong><br><sub>Filter by type, search by keyword</sub></td>
+      <td align="center"><strong>One-click setup</strong><br><sub>Test connection, start polling</sub></td>
+    </tr>
+    <tr>
+      <td align="center"><img src="docs/images/per_mr_grouping.png" alt="Native macOS notifications grouped by merge request" width="220"></td>
+      <td align="center"><img src="docs/images/history_search.png" alt="Notification history with search and filters" width="220"></td>
+      <td align="center"><img src="docs/images/connection_tested.png" alt="Settings window showing successful connection test" width="220"></td>
+    </tr>
+  </table>
+</div>
 
 ## Features
 
@@ -26,6 +49,18 @@
 - **Auto-updates** — via Sparkle with EdDSA signature verification
 - **Launch at login** — via SMAppService (no LaunchAgent plist needed)
 - **Adaptive polling** — automatically slows down when your machine is idle
+
+## Privacy & Your GitLab Token
+
+Tanuki Bell needs a GitLab **Personal Access Token** (PAT) with the **`read_api`** scope to fetch your merge request activity. Here's what you should know:
+
+| Concern | Detail |
+|---------|--------|
+| **What can it access?** | Only `read_api` — read-only access. The app cannot modify your projects, merge requests, or anything else. |
+| **Where is the token stored?** | In your **macOS Keychain** via the Security framework — the same encrypted store that Safari, Git, and other apps use for credentials. It never touches disk as plain text. |
+| **What API calls are made?** | One GraphQL query every 30s for todos, plus lightweight REST calls every 2min for MR state changes. All requests use **ETag caching**, so most polls return `304 Not Modified` and consume zero quota. GitLab's API rate limit is 10 requests/second — Tanuki Bell uses a fraction of that. |
+| **Is any data sent elsewhere?** | No. The app only talks to your GitLab instance. No analytics, no telemetry, no third-party services. Update checks go to GitHub Releases (via Sparkle) and nothing else. |
+| **Can I verify this myself?** | Absolutely — the entire source is here. The networking code lives in [`GitLabService.swift`](TanukiBell/Services/GitLabService.swift) and the Keychain logic in [`KeychainStore.swift`](TanukiBell/Services/KeychainStore.swift). |
 
 ## How It Works
 
@@ -94,14 +129,16 @@ xcodebuild -project TanukiBell.xcodeproj -scheme TanukiBell -configuration Relea
 
 ### Setup
 
-1. Launch Tanuki Bell — a 🔔 icon appears in your menu bar
+1. Launch Tanuki Bell — a bell icon appears in your menu bar
 2. Click the bell → **Settings...**
 3. In the **Connection** tab:
    - Set your GitLab URL (default: `https://gitlab.com`)
-   - Create a **legacy** Personal Access Token in GitLab (Profile → Access Tokens) with the **`read_api`** scope
+   - Create a Personal Access Token in GitLab (**Profile → Access Tokens**, select **`read_api`** scope only)
    - Paste the token and click **Test Connection**
    - Click **Save & Start Polling**
 4. Enable notifications when prompted (or in System Settings → Notifications → Tanuki Bell)
+
+Your token is stored in macOS Keychain — see [Privacy & Your GitLab Token](#privacy--your-gitlab-token) for full details on what the app accesses and how your credentials are protected.
 
 ## Configuration
 
