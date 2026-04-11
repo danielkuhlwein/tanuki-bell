@@ -75,6 +75,42 @@ xcodebuild \
 
 echo "==> Built $APP_PATH"
 
+# Re-sign all embedded binaries with Developer ID + timestamp + hardened runtime.
+# xcodebuild signs the main binary but SPM-built dependencies (Sparkle) may not
+# inherit the correct signing identity or timestamp.
+echo "==> Signing embedded frameworks and helpers"
+
+# Find and sign every Mach-O binary inside Frameworks (innermost first via -depth)
+find "$APP_PATH/Contents/Frameworks" -depth \( -name "*.xpc" -o -name "*.app" -o -name "*.framework" \) -type d | while read -r bundle; do
+    echo "    Signing $(basename "$bundle")"
+    codesign --force --sign "$SIGN_IDENTITY" --timestamp --options runtime "$bundle"
+done
+
+# Also sign any standalone Mach-O executables not inside sub-bundles (e.g. Sparkle's Autoupdate)
+FRAMEWORKS_DIR="$APP_PATH/Contents/Frameworks"
+find "$FRAMEWORKS_DIR" -type f | while read -r bin; do
+    # Get path relative to Frameworks dir; skip files inside .app or .xpc sub-bundles
+    rel_path="${bin#"$FRAMEWORKS_DIR"/}"
+    if echo "$rel_path" | grep -qE '\.(app|xpc)/'; then
+        continue
+    fi
+    if file "$bin" | grep -q "Mach-O"; then
+        echo "    Signing $(basename "$bin")"
+        codesign --force --sign "$SIGN_IDENTITY" --timestamp --options runtime "$bin"
+    fi
+done
+
+# Re-sign frameworks after signing their contents
+find "$APP_PATH/Contents/Frameworks" -name "*.framework" -type d -maxdepth 1 | while read -r fw; do
+    echo "    Re-signing $(basename "$fw")"
+    codesign --force --sign "$SIGN_IDENTITY" --timestamp --options runtime "$fw"
+done
+
+# Sign the main app bundle (outermost — must be last)
+echo "    Signing $APP_NAME.app"
+codesign --force --sign "$SIGN_IDENTITY" --timestamp --options runtime \
+    --entitlements TanukiBell/TanukiBell.entitlements "$APP_PATH"
+
 # Verify code signature
 echo "==> Verifying code signature"
 codesign --verify --deep --strict "$APP_PATH"
@@ -113,16 +149,24 @@ fi
 echo "==> Created $DMG_PATH"
 
 # Sign the DMG
-codesign --force --sign "$SIGN_IDENTITY" "$DMG_PATH"
+codesign --force --sign "$SIGN_IDENTITY" --timestamp "$DMG_PATH"
 echo "==> Signed DMG"
 
 # Notarise
 echo "==> Submitting for notarisation (this may take a few minutes)..."
-xcrun notarytool submit "$DMG_PATH" \
+NOTARIZE_OUTPUT=$(xcrun notarytool submit "$DMG_PATH" \
     --keychain-profile "$NOTARYTOOL_PROFILE" \
-    --wait
+    --wait 2>&1) || true
+echo "$NOTARIZE_OUTPUT"
 
-echo "==> Notarisation complete"
+if echo "$NOTARIZE_OUTPUT" | grep -q "status: Accepted"; then
+    echo "==> Notarisation accepted"
+else
+    echo "Error: Notarisation failed. Check the log with:"
+    SUBMISSION_ID=$(echo "$NOTARIZE_OUTPUT" | grep "id:" | head -1 | awk '{print $2}')
+    echo "  xcrun notarytool log $SUBMISSION_ID --keychain-profile $NOTARYTOOL_PROFILE"
+    exit 1
+fi
 
 # Staple the notarisation ticket to the DMG
 xcrun stapler staple "$DMG_PATH"
