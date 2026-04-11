@@ -106,11 +106,7 @@ graph LR
 
 1. Grab the latest `.dmg` from [**Releases**](https://github.com/danielkuhlwein/tanuki-bell/releases)
 2. Open the DMG and drag **Tanuki Bell** to Applications
-3. On first launch, macOS will block the app since it's not notarised:
-   - Double-click the app — you'll see a blocked dialogue — click **Done**
-   - Open **System Settings → Privacy & Security**
-   - Scroll down and click **Open Anyway**
-   - This is a **one-time** step
+3. Launch from Applications — that's it!
 
 ### Build from Source
 
@@ -153,15 +149,31 @@ Open **Settings** from the menu bar popover to configure:
 
 ## Releasing
 
+### One-Time Setup
+
+1. **Apple Developer certificate** — install a "Developer ID Application" certificate from your [Apple Developer account](https://developer.apple.com/account/resources/certificates/list)
+
+2. **Store notarisation credentials** — create an [app-specific password](https://support.apple.com/en-us/102654), then:
+   ```bash
+   xcrun notarytool store-credentials "tanuki-bell" \
+       --apple-id "your@email.com" \
+       --team-id "WG7BK7C4BG" \
+       --password "your-app-specific-password"
+   ```
+
+3. **Generate Sparkle EdDSA keys** (if not already done):
+   ```bash
+   ./scripts/generate-sparkle-keys.sh
+   ```
+
+### Building a Release
+
 ```bash
-# Build + create DMG
+# Build + sign + notarise + create DMG
 ./scripts/build-release.sh 1.0.0
 
-# Build + create DMG + publish to GitHub Releases
+# Build + sign + notarise + create DMG + publish to GitHub Releases
 ./scripts/build-release.sh 1.0.0 --publish
-
-# Generate Sparkle EdDSA keys (one-time)
-./scripts/generate-sparkle-keys.sh
 ```
 
 <details>

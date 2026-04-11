@@ -34,13 +34,14 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.danielkuhlwein.tanuki-bell
         PRODUCT_NAME: "Tanuki Bell"
         PRODUCT_MODULE_NAME: TanukiBell
-        MARKETING_VERSION: "0.3.1"
-        CURRENT_PROJECT_VERSION: "5"
+        MARKETING_VERSION: "0.4.0"
+        CURRENT_PROJECT_VERSION: "6"
         INFOPLIST_FILE: TanukiBell/Info.plist
         CODE_SIGN_ENTITLEMENTS: TanukiBell/TanukiBell.entitlements
-        CODE_SIGN_IDENTITY: "-"
+        CODE_SIGN_IDENTITY: "Developer ID Application"
         CODE_SIGN_STYLE: Manual
-        ENABLE_HARDENED_RUNTIME: false
+        DEVELOPMENT_TEAM: WG7BK7C4BG
+        ENABLE_HARDENED_RUNTIME: true
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         COMBINE_HIDPI_IMAGES: true
     entitlements:

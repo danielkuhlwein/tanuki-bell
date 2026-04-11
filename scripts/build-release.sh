@@ -1,11 +1,20 @@
 #!/bin/bash
 set -euo pipefail
 
-# Tanuki Bell — build, sign, package, and optionally publish a release
+# Tanuki Bell — build, sign, notarise, package, and optionally publish a release
 #
 # Usage:
 #   ./scripts/build-release.sh <version>            # build only
 #   ./scripts/build-release.sh <version> --publish   # build + GitHub Release
+#
+# Prerequisites:
+#   - Xcode with "Developer ID Application" certificate installed
+#   - DEVELOPMENT_TEAM env var set to your Apple Team ID
+#   - Notarytool credentials stored in keychain (one-time):
+#       xcrun notarytool store-credentials "tanuki-bell" \
+#           --apple-id "your@email.com" \
+#           --team-id "YOUR_TEAM_ID" \
+#           --password "app-specific-password"
 #
 # Examples:
 #   ./scripts/build-release.sh 1.0.0
@@ -26,12 +35,23 @@ BUILD_DIR="build/release"
 APP_PATH="$BUILD_DIR/$APP_NAME.app"
 DMG_PATH="build/TanukiBell-${VERSION}.dmg"
 TAG="v${VERSION}"
+NOTARYTOOL_PROFILE="${NOTARYTOOL_PROFILE:-tanuki-bell}"
+DEVELOPMENT_TEAM="WG7BK7C4BG"
+SIGN_IDENTITY="Developer ID Application"
+
+# Verify the signing identity exists
+if ! security find-identity -v -p codesigning | grep -q "$SIGN_IDENTITY"; then
+    echo "Error: No '$SIGN_IDENTITY' certificate found."
+    echo "  Install it from your Apple Developer account (Certificates, Identifiers & Profiles)."
+    exit 1
+fi
 
 # Sparkle tools (resolved via SPM into Xcode DerivedData)
 SPARKLE_BIN=$(find ~/Library/Developer/Xcode/DerivedData -path "*/Sparkle*/bin/generate_appcast" -type f 2>/dev/null | head -1)
 SIGN_UPDATE_BIN=$(find ~/Library/Developer/Xcode/DerivedData -path "*/Sparkle*/bin/sign_update" -type f 2>/dev/null | head -1)
 
 echo "==> Building $APP_NAME v$VERSION"
+echo "    Team: $DEVELOPMENT_TEAM"
 
 # Clean build directory
 rm -rf "$BUILD_DIR"
@@ -42,20 +62,24 @@ if command -v xcodegen &>/dev/null; then
     xcodegen generate
 fi
 
-# Build release
+# Build release (xcodebuild handles signing with hardened runtime)
 xcodebuild \
     -project TanukiBell.xcodeproj \
     -scheme "$SCHEME" \
     -configuration Release \
     -derivedDataPath "$BUILD_DIR/DerivedData" \
     CONFIGURATION_BUILD_DIR="$(pwd)/$BUILD_DIR" \
+    DEVELOPMENT_TEAM="$DEVELOPMENT_TEAM" \
+    CODE_SIGN_IDENTITY="$SIGN_IDENTITY" \
     build
 
 echo "==> Built $APP_PATH"
 
-# Ad-hoc code sign
-codesign --force --sign - --deep "$APP_PATH"
-echo "==> Signed (ad-hoc)"
+# Verify code signature
+echo "==> Verifying code signature"
+codesign --verify --deep --strict "$APP_PATH"
+codesign -d --verbose=2 "$APP_PATH" 2>&1 | grep -E "Authority|TeamIdentifier"
+echo "==> Signature valid"
 
 # Create DMG
 if command -v create-dmg &>/dev/null; then
@@ -87,6 +111,27 @@ else
 fi
 
 echo "==> Created $DMG_PATH"
+
+# Sign the DMG
+codesign --force --sign "$SIGN_IDENTITY" "$DMG_PATH"
+echo "==> Signed DMG"
+
+# Notarise
+echo "==> Submitting for notarisation (this may take a few minutes)..."
+xcrun notarytool submit "$DMG_PATH" \
+    --keychain-profile "$NOTARYTOOL_PROFILE" \
+    --wait
+
+echo "==> Notarisation complete"
+
+# Staple the notarisation ticket to the DMG
+xcrun stapler staple "$DMG_PATH"
+echo "==> Stapled notarisation ticket"
+
+# Verify notarisation
+echo "==> Verifying notarisation"
+spctl --assess --type open --context context:primary-signature -v "$DMG_PATH"
+echo "==> Notarisation verified"
 
 # Generate / update appcast.xml
 if [ -n "$SPARKLE_BIN" ]; then
@@ -121,15 +166,10 @@ if [ "$PUBLISH" = "--publish" ]; then
 ### Installation
 1. Download \`TanukiBell-${VERSION}.dmg\` below
 2. Open the DMG and drag **Tanuki Bell** to Applications
-3. On first launch, macOS will block the app since it is not notarised. To allow it:
-   - **Double-click** the app (you will see a blocked dialogue — click **Done**)
-   - Open **System Settings → Privacy & Security**
-   - Scroll down to find the blocked message and click **Open Anyway**
-   - Authenticate with your password or Touch ID
-   - This is a **one-time** step — all subsequent launches work normally
+3. Launch from Applications — that's it!
 
 ### Setup
-1. Create a GitLab **legacy** Personal Access Token with \`read_api\` scope
+1. Create a GitLab **Personal Access Token** with \`read_api\` scope
 2. Click the bell in your menu bar → **Settings...**
 3. Paste your token and click **Test Connection**
 4. Click **Save & Start Polling**
