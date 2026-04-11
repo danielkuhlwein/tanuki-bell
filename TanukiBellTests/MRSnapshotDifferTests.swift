@@ -26,7 +26,7 @@ final class MRSnapshotDifferTests: XCTestCase {
 
     private func makeApprovals(_ usernames: [String]) -> RESTMRApprovals {
         RESTMRApprovals(approvedBy: usernames.map {
-            RESTApprover(user: RESTUser(id: 0, name: $0, username: $0))
+            RESTApprover(user: RESTUser(id: 0, name: "\($0)-display", username: $0))
         })
     }
 
@@ -125,7 +125,7 @@ final class MRSnapshotDifferTests: XCTestCase {
         let snapshot = makeSnapshot(approvedBy: [])
 
         let events = MRSnapshotDiffer.diff(current: mr, approvals: approvals, snapshot: snapshot)
-        XCTAssertTrue(events.contains(.approved(byUsername: "bob")))
+        XCTAssertTrue(events.contains(.approved(byUsername: "bob", displayName: "bob-display")))
     }
 
     func testExistingApproverDoesNotRefire() {
@@ -134,7 +134,7 @@ final class MRSnapshotDifferTests: XCTestCase {
         let snapshot = makeSnapshot(approvedBy: ["bob"])
 
         let events = MRSnapshotDiffer.diff(current: mr, approvals: approvals, snapshot: snapshot)
-        XCTAssertFalse(events.contains(.approved(byUsername: "bob")))
+        XCTAssertFalse(events.contains(.approved(byUsername: "bob", displayName: "bob-display")))
     }
 
     func testMultipleNewApproversEmitMultipleEvents() {
@@ -143,8 +143,8 @@ final class MRSnapshotDifferTests: XCTestCase {
         let snapshot = makeSnapshot(approvedBy: [])
 
         let events = MRSnapshotDiffer.diff(current: mr, approvals: approvals, snapshot: snapshot)
-        XCTAssertTrue(events.contains(.approved(byUsername: "bob")))
-        XCTAssertTrue(events.contains(.approved(byUsername: "carol")))
+        XCTAssertTrue(events.contains(.approved(byUsername: "bob", displayName: "bob-display")))
+        XCTAssertTrue(events.contains(.approved(byUsername: "carol", displayName: "carol-display")))
     }
 
     func testPartialNewApproversOnlyEmitNew() {
@@ -153,8 +153,8 @@ final class MRSnapshotDifferTests: XCTestCase {
         let snapshot = makeSnapshot(approvedBy: ["alice"])
 
         let events = MRSnapshotDiffer.diff(current: mr, approvals: approvals, snapshot: snapshot)
-        XCTAssertFalse(events.contains(.approved(byUsername: "alice")))
-        XCTAssertTrue(events.contains(.approved(byUsername: "bob")))
+        XCTAssertFalse(events.contains(.approved(byUsername: "alice", displayName: "alice-display")))
+        XCTAssertTrue(events.contains(.approved(byUsername: "bob", displayName: "bob-display")))
     }
 
     // MARK: - No spurious events

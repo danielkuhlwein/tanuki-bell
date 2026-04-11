@@ -12,7 +12,7 @@ enum MRDiffEvent: Equatable {
     case newCommitsPushed
     case pipelineFailed
     case pipelinePassed
-    case approved(byUsername: String)
+    case approved(byUsername: String, displayName: String)
 }
 
 /// Pure snapshot-diff logic. No SwiftData, no async, no side effects.
@@ -49,9 +49,11 @@ enum MRSnapshotDiffer {
         }
 
         // New approvers.
-        let currentApprovers = approvals.approvedBy.map(\.user.username)
-        let newApprovers = currentApprovers.filter { !snapshot.approvedByUsernames.contains($0) }
-        events.append(contentsOf: newApprovers.map { .approved(byUsername: $0) })
+        let snapshotSet = Set(snapshot.approvedByUsernames)
+        let newApprovers = approvals.approvedBy.filter { !snapshotSet.contains($0.user.username) }
+        events.append(contentsOf: newApprovers.map {
+            .approved(byUsername: $0.user.username, displayName: $0.user.name)
+        })
 
         return events
     }

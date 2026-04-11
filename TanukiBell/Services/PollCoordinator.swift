@@ -313,7 +313,7 @@ final class PollCoordinator {
             for event in events {
                 // Suppress events the current user caused themselves (e.g. approving
                 // an MR they were asked to review fires an approved event for their own username).
-                if case .approved(let byUsername) = event, byUsername == currentUsername {
+                if case .approved(let byUsername, _) = event, byUsername == currentUsername {
                     print("[Supplemental] Skipped self-approval by \(byUsername) on !\(mr.iid)")
                     continue
                 }
@@ -504,15 +504,15 @@ final class PollCoordinator {
                 gitlabTodoID: "",
                 bodyExcerpt: nil
             )
-        case .approved(let byUsername):
+        case .approved(let byUsername, let displayName):
             return ClassifiedNotification(
                 type: .approved,
-                title: "Approved by \(NotificationClassifier.abbreviateName(byUsername))",
+                title: "Approved by \(NotificationClassifier.abbreviateName(displayName))",
                 projectName: projectName,
                 mrTitle: mr.title,
                 mrIID: mr.iid,
                 sourceURL: URL(string: mr.webUrl),
-                senderName: byUsername,
+                senderName: displayName,
                 senderAvatarURL: nil,
                 threadID: threadID,
                 notificationID: "approved-\(mr.id)-\(byUsername)",
